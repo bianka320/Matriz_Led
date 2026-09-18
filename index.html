@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MatrixMind AI - ESP32 Matrix Controller</title>
+    
+    <!-- Meta tags PWA para móviles -->
+    <meta name="theme-color" content="#0b0d10">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="AI Handwriting Recognizer con conexión directa a microcontrolador ESP32 y matriz LED 8x8.">
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    
+    <!-- Google Fonts: Outfit & Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- TensorFlow.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    
+    <!-- Hoja de Estilos -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Navigation Bar -->
+        <header class="top-nav">
+            <div class="brand">
+                <span class="logo-dot"></span>
+                <span class="brand-name">MatrixMind</span>
+                <span class="version-badge">v6.11</span>
+            </div>
+            <div class="nav-controls">
+                <div class="status-badge" id="wifiStatus" title="Estado de conexión con el ESP32">
+                    <span class="wifi-icon">📶</span>
+                    <span class="status-text">Local Wi-Fi</span>
+                </div>
+                <button class="settings-btn" id="openSettingsBtn" aria-label="Configurar ESP32">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="header-section">
+                <h1 class="main-title">ESP32 AI Matrix Controller</h1>
+                <p class="subtitle">Reconocimiento de trazos y marquesina en tiempo real para tu microcontrolador ESP32</p>
+            </div>
+
+            <!-- Canvas Card -->
+            <section class="canvas-section">
+                <div class="canvas-wrapper" id="canvasContainer">
+                    <canvas id="drawingCanvas" width="320" height="320"></canvas>
+                    <div class="canvas-hint" id="canvasHint">Dibuja aquí con el dedo o ratón</div>
+                    <!-- Indicador de procesamiento -->
+                    <div class="ai-processing-overlay" id="processingOverlay">
+                        <div class="spinner"></div>
+                        <span>Analizando con IA...</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="button-group">
+                    <button class="btn btn-clear" id="clearBtn">
+                        Clear Canvas
+                    </button>
+                    <button class="btn btn-recognize" id="recognizeBtn">
+                        <span class="btn-glow"></span>
+                        <span class="btn-content">
+                            <svg class="ai-sparkle-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                            AI Recognize Letter
+                        </span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Prediction Section -->
+            <section class="prediction-section" id="predictionSection">
+                <div class="prediction-label">AI PREDICTION:</div>
+                
+                <div class="prediction-character-card">
+                    <div class="prediction-char" id="predictionChar">-</div>
+                    <div class="prediction-subtext" id="predictionDetails">Esperando trazo...</div>
+                </div>
+
+                <div class="confidence-wrapper">
+                    <div class="confidence-bar-container">
+                        <div class="confidence-bar-fill" id="confidenceBar" style="width: 0%"></div>
+                    </div>
+                    <div class="confidence-text">
+                        <span id="confidenceLabel">Nivel de Coincidencia</span>
+                        <span class="ai-engine-tag">TF.js Hybrid Engine</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Phrase Scroll Sender Section -->
+            <section class="phrase-sender-section" id="phraseSenderSection" style="margin-top: 32px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 22px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); backdrop-filter: blur(10px);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin: 0;">
+                            <span>📜</span> Desplazar Frase en Matriz LED
+                        </h3>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 0 0;">
+                            Escribe cualquier palabra o frase y envíala a tu ESP32 para verla correr en marquesina letra por letra.
+                        </p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label for="phraseSpeedSelect" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Velocidad:</label>
+                        <select id="phraseSpeedSelect" style="background: #161b22; color: #f8fafc; border: 1px solid var(--border-color, rgba(255,255,255,0.15)); border-radius: 8px; padding: 7px 12px; font-size: 0.88rem; font-weight: 600; cursor: pointer; outline: none; box-shadow: 0 2px 8px rgba(0,0,0,0.4);">
+                            <option value="95" style="background: #161b22; color: #f8fafc; padding: 8px;">Lento</option>
+                            <option value="65" selected style="background: #161b22; color: #f8fafc; padding: 8px;">Normal</option>
+                            <option value="40" style="background: #161b22; color: #f8fafc; padding: 8px;">Rápido</option>
+                            <option value="25" style="background: #161b22; color: #f8fafc; padding: 8px;">Ultra Rápido</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="phrase-input-row" style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <input type="text" id="phraseInput" placeholder="Ej: HOLA MATRIXMIND ESP32" maxlength="80" style="flex: 1; min-width: 200px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 18px; color: var(--text-primary); font-size: 1rem; font-family: 'JetBrains Mono', monospace; transition: all 0.2s; outline: none;">
+                    <button class="btn-send-phrase" id="sendPhraseBtn" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 12px; padding: 14px 24px; font-size: 0.95rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35); transition: all 0.2s; white-space: nowrap;">
+                        <span>🚀</span> Enviar Frase
+                    </button>
+                </div>
+            </section>
+
+            <!-- Virtual LED Matrix Simulator Section -->
+            <section class="virtual-matrix-section" id="virtualMatrixSection" style="margin-top: 32px; background: var(--bg-card); border: 1px solid var(--border-color, rgba(255,255,255,0.12)); border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; gap: 16px;">
+                <div style="width: 100%; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin: 0;">
+                            <span>🖥️</span> Matriz LED 8x8 en Pantalla
+                        </h3>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 0 0;">
+                            Visualiza tus letras y marquesinas animadas en tiempo real aquí mismo, sin depender del hardware ni de Wokwi.
+                        </p>
+                    </div>
+                    <div class="virtual-matrix-status" style="font-size: 0.78rem; font-weight: 600; color: #10b981; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); padding: 5px 12px; border-radius: 20px; display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #10b981;"></span>
+                        En Vivo
+                    </div>
+                </div>
+
+                <!-- 8x8 LED Grid -->
+                <div id="virtualLedGrid" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; background: #0c0f14; padding: 18px; border-radius: 14px; border: 2px solid rgba(255, 94, 32, 0.3); box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 8px 24px rgba(0,0,0,0.5); width: 240px; height: 240px; margin-top: 6px;">
+                    <!-- 64 dot divs generados por JavaScript -->
+                </div>
+            </section>
+        </main>
+
+        <!-- ESP32 Connection Toast/Notification -->
+        <div class="toast-notification" id="toastNotification">
+            <span class="toast-icon" id="toastIcon">🚀</span>
+            <span class="toast-message" id="toastMessage">Enviando al ESP32...</span>
+        </div>
+
+        <!-- Settings Modal -->
+        <div class="modal-overlay" id="settingsModal">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h2>⚙️ Configuración del Hardware ESP32</h2>
+                    <button class="close-modal-btn" id="closeSettingsBtn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="esp32IpInput">Dirección IP o URL del ESP32 en Red Local:</label>
+                        <div class="input-with-action">
+                            <input type="text" id="esp32IpInput" placeholder="192.168.0.192" value="192.168.0.192">
+                            <button class="btn-test" id="testConnectionBtn">Probar</button>
+                        </div>
+                        <small class="helper-text">Endpoint API completo: <code id="endpointPreview">http://192.168.0.192/api/set-character</code></small>
+                    </div>
+
+                    <div class="form-group toggle-group">
+                        <label class="switch">
+                            <input type="checkbox" id="autoSendToggle" checked>
+                            <span class="slider round"></span>
+                        </label>
+                        <div class="toggle-label">
+                            <span class="toggle-title">Envío Automático al ESP32</span>
+                            <span class="toggle-desc">Transmite automáticamente el carácter al dejar de dibujar o tras el análisis de IA.</span>
+                        </div>
+                    </div>
+
+                    <!-- Botón para entrenar o ajustar caracteres personalizados -->
+                    <div class="ai-training-box">
+                        <h3>🧠 Ajuste Rápido en Navegador (On-Device Learning)</h3>
+                        <p>Si la IA confunde un trazo particular con otro, puedes dibujarlo en el lienzo e indicarle la letra correcta para enseñarle al instante:</p>
+                        <div class="quick-train-row">
+                            <input type="text" id="correctCharInput" maxlength="1" placeholder="Ej: A" class="train-input">
+                            <button class="btn-train" id="trainBtn">Enseñar a la IA</button>
+                        </div>
+                        <div class="custom-templates-status" id="customTemplatesStatus" style="margin-top: 12px; font-size: 0.85rem; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+                            <span id="customTemplatesCountText">Muestras aprendidas: 0 en total</span>
+                            <button class="btn-clear-templates" id="clearTemplatesBtn" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: all 0.2s;">🧹 Borrar Todas</button>
+                        </div>
+                        <div class="profile-backup-box" style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed rgba(255,255,255,0.1);">
+                            <h4 style="font-size: 0.9rem; color: var(--text-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">💾 Respaldo y Transferencia de Perfil IA</h4>
+                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 10px;">Exporta tus plantillas aprendidas para compartirlas o transferirlas a otro celular/PC:</p>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button class="btn-export" id="exportProfileBtn" style="flex: 1; min-width: 130px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">📤 Exportar Perfil JSON</button>
+                                <label for="importProfileInput" class="btn-import" style="flex: 1; min-width: 130px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; text-align: center;">📥 Importar Perfil JSON</label>
+                                <input type="file" id="importProfileInput" accept=".json,application/json" style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" id="saveSettingsBtn">Guardar Configuración</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de Lógica Principal (con cache-buster v6.11) -->
+    <script src="app.js?v=6.11"></script>
+    <script>
+        // Registro y actualización forzada del Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js?v=6.11')
+                    .then(reg => {
+                        console.log('✅ MatrixMind PWA ServiceWorker v6.11 registrado:', reg.scope);
+                        reg.update();
+                    })
+                    .catch(err => console.warn('⚠️ ServiceWorker no registrado (modo normal web):', err));
+            });
+        }
+    </script>
+</body>
+</html>
