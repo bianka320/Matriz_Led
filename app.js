@@ -108,7 +108,7 @@ class MatrixMindApp {
         this.lastPrediction = null;
         
         // Configuración y Memoria de Aprendizaje
-        this.esp32Ip = localStorage.getItem('matrixmind_esp32_ip') || '192.168.0.193';
+        this.esp32Ip = localStorage.getItem('matrixmind_esp32_ip') || '192.168.1.15';
         this.autoSend = localStorage.getItem('matrixmind_autosend') === 'true'; // Por defecto desactivado (sólo al presionar botón)
         
         // Cargar plantillas personalizadas como arrays múltiples (Multi-Template Learning) y sanear versiones incompatibles
@@ -319,7 +319,7 @@ class MatrixMindApp {
         });
         
         this.esp32IpInput.addEventListener('input', () => {
-            const ip = this.esp32IpInput.value.trim() || '192.168.0.193';
+            const ip = this.esp32IpInput.value.trim() || '192.168.1.15';
             this.endpointPreview.textContent = `http://${ip}/api/set-character`;
         });
         
@@ -1639,7 +1639,7 @@ class MatrixMindApp {
     }
 
     saveSettings() {
-        const ip = this.esp32IpInput.value.trim() || '192.168.0.193';
+        const ip = this.esp32IpInput.value.trim() || '192.168.1.15';
         this.esp32Ip = ip;
         this.autoSend = this.autoSendToggle.checked;
 
