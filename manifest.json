@@ -1,11 +1,11 @@
 {
-  "name": "MatrixMind AI - Handwriting Recognizer",
-  "short_name": "MatrixMind",
-  "description": "Reconocimiento alfanumérico de escritura con Inteligencia Artificial y control de matriz LED 8x8 con ESP32.",
+  "name": "STA - Sistema Táctil Asistencial",
+  "short_name": "STA",
+  "description": "Sistema Táctil Asistencial: Reconocimiento de trazos táctiles con Inteligencia Artificial, control de matriz LED 8x8 y domótica accesible con microcontrolador ESP32.",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0b0d10",
-  "theme_color": "#0b0d10",
+  "background_color": "#07090d",
+  "theme_color": "#07090d",
   "orientation": "portrait-primary",
   "icons": [
     {
