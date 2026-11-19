@@ -1,11 +1,11 @@
-const CACHE_NAME = 'sta-v7.0-final-assistive';
+const CACHE_NAME = 'matrixmind-ai-v6.11-hypergeometric';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './styles.css?v=7.0',
-  './app.js?v=7.0',
+  './styles.css?v=6.11',
+  './app.js?v=6.11',
   './manifest.json',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Outfit:wght@400;500;600;700;800;900&display=swap',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Outfit:wght@400;600;700;800&display=swap',
   'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js'
 ];
 
@@ -13,7 +13,7 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('📦 Almacenando en caché archivos estáticos de STA PWA v7.0...');
+      console.log('📦 Almacenando en caché archivos estáticos de MatrixMind PWA...');
       return cache.addAll(ASSETS_TO_CACHE);
     }).then(() => self.skipWaiting())
   );

@@ -17,64 +17,46 @@ class MatrixMindApp {
         this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
         this.canvasHint = document.getElementById('canvasHint');
         this.processingOverlay = document.getElementById('processingOverlay');
-
+        
         this.clearBtn = document.getElementById('clearBtn');
         this.recognizeBtn = document.getElementById('recognizeBtn');
-
+        
         this.predictionChar = document.getElementById('predictionChar');
         this.predictionDetails = document.getElementById('predictionDetails');
         this.confidenceBar = document.getElementById('confidenceBar');
         this.confidenceLabel = document.getElementById('confidenceLabel');
-
+        
         this.wifiStatus = document.getElementById('wifiStatus');
         this.toastNotification = document.getElementById('toastNotification');
         this.toastIcon = document.getElementById('toastIcon');
         this.toastMessage = document.getElementById('toastMessage');
-
-        // Pestañas (Tabs) y Ajustes
+        
+        // Modal de Configuración
         this.openSettingsBtn = document.getElementById('openSettingsBtn');
+        this.closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        this.settingsModal = document.getElementById('settingsModal');
         this.esp32IpInput = document.getElementById('esp32IpInput');
         this.endpointPreview = document.getElementById('endpointPreview');
         this.testConnectionBtn = document.getElementById('testConnectionBtn');
         this.saveSettingsBtn = document.getElementById('saveSettingsBtn');
         this.autoSendToggle = document.getElementById('autoSendToggle');
-
-        // Configuración y Estado de Domótica Inteligente
-        this.domoticsConfig = this.loadDomoticsConfig();
-        this.domoticsState = {
-            lamp: false,
-            alarm: false
-        };
-        this.alarmTimeout = null;
-        this.alarmAnimInterval = null;
-
+        
         // Aprendizaje rápido
         this.correctCharInput = document.getElementById('correctCharInput');
         this.trainBtn = document.getElementById('trainBtn');
         this.clearTemplatesBtn = document.getElementById('clearTemplatesBtn');
         this.exportProfileBtn = document.getElementById('exportProfileBtn');
         this.importProfileInput = document.getElementById('importProfileInput');
-
+        
         // Marquesina / Desplazamiento de frase
         this.phraseInput = document.getElementById('phraseInput');
         this.sendPhraseBtn = document.getElementById('sendPhraseBtn');
         this.phraseSpeedSelect = document.getElementById('phraseSpeedSelect');
-
+        
         // Simulador LED 8x8 en pantalla
         this.virtualLedGrid = document.getElementById('virtualLedGrid');
         this.virtualDots = [];
         this.virtualScrollInterval = null;
-
-        // Iconos gráficos de Domótica 8x8 (Muestran dibujos específicos en vez de letras)
-        this.DOMOTICS_ICONS = {
-            lamp_on:    [0x18, 0x42, 0x3C, 0xA5, 0x24, 0x18, 0x3C, 0x18], // Foco Encendido con destellos radiales y bombilla idéntica a la referencia física
-            lamp_off:   [0x00, 0x00, 0x3C, 0x24, 0x24, 0x18, 0x3C, 0x18], // Foco Apagado (mismo cuerpo de bombilla sin destellos luminosos)
-            alarm_on:   [0x18, 0x5A, 0xBD, 0xBD, 0x7E, 0xFF, 0x18, 0x24], // Sirena Sonando Frame 1 con ondas acústicas vibrando
-            alarm_on_1: [0x18, 0x5A, 0xBD, 0xBD, 0x7E, 0xFF, 0x18, 0x24], // Sirena Sonando Frame 1
-            alarm_on_2: [0x18, 0x99, 0x7E, 0x7E, 0xFF, 0x7E, 0x18, 0x18], // Sirena Sonando Frame 2 (pulsación alternada)
-            alarm_off:  [0x18, 0x3C, 0x3C, 0x3C, 0x7E, 0xFF, 0x18, 0x00]  // Campana en reposo / silenciada (forma clásica, limpia y representativa)
-        };
-
         this.FONT_MAP_8X8 = {
             '0': [0x3C, 0x66, 0x6E, 0x7E, 0x76, 0x66, 0x3C, 0x00],
             '1': [0x18, 0x38, 0x18, 0x18, 0x18, 0x18, 0x7E, 0x00],
@@ -115,19 +97,20 @@ class MatrixMindApp {
             'Z': [0x7E, 0x06, 0x0C, 0x18, 0x30, 0x60, 0x7E, 0x00],
             ' ': [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
             '-': [0x00, 0x00, 0x00, 0x7E, 0x00, 0x00, 0x00, 0x00],
+            '&': [0x38, 0x6C, 0x6C, 0x38, 0x6E, 0x66, 0x3B, 0x00],
             '.': [0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x18, 0x00]
         };
-
+        
         // Estado de dibujo y lógica
         this.isDrawing = false;
         this.hasDrawn = false;
         this.debounceTimer = null;
         this.lastPrediction = null;
-
+        
         // Configuración y Memoria de Aprendizaje
-        this.esp32Ip = localStorage.getItem('matrixmind_esp32_ip') || '127.0.0.1';
+        this.esp32Ip = localStorage.getItem('matrixmind_esp32_ip') || '192.168.0.137';
         this.autoSend = localStorage.getItem('matrixmind_autosend') === 'true'; // Por defecto desactivado (sólo al presionar botón)
-
+        
         // Cargar plantillas personalizadas como arrays múltiples (Multi-Template Learning) y sanear versiones incompatibles
         try {
             const raw = JSON.parse(localStorage.getItem('matrixmind_custom_templates') || '{}');
@@ -151,13 +134,13 @@ class MatrixMindApp {
             this.customTemplates = {};
             localStorage.removeItem('matrixmind_custom_templates');
         }
-
+        
         // Mapa alfanumérico base (37 clases: 0-9, A-Z, Ñ)
         this.classes = [
-            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
-            'K', 'L', 'M', 'N', 'Ñ', 'O', 'P', 'Q', 'R', 'S',
-            'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+            '0','1','2','3','4','5','6','7','8','9',
+            'A','B','C','D','E','F','G','H','I','J',
+            'K','L','M','N','Ñ','O','P','Q','R','S',
+            'T','U','V','W','X','Y','Z'
         ];
 
         this.init();
@@ -167,7 +150,6 @@ class MatrixMindApp {
         this.setupCanvas();
         this.setupEventListeners();
         this.loadSettings();
-        this.syncDomoticsUI();
         if (localStorage.getItem('matrixmind_autosend') === null || localStorage.getItem('matrixmind_autosend') !== 'true') {
             this.autoSend = false;
             localStorage.setItem('matrixmind_autosend', 'false');
@@ -175,7 +157,7 @@ class MatrixMindApp {
         }
         this.initVirtualMatrix();
         this.initAIEngine();
-        console.log('🚀 STA Sistema Táctil Asistencial inicializado correctamente.');
+        console.log('🚀 MatrixMind AI inicializado correctamente.');
     }
 
     /**
@@ -291,7 +273,7 @@ class MatrixMindApp {
         // Limpiar en negro puro (fondo de tensor para procesar con IA)
         this.ctx.fillStyle = '#000000';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
+        
         // Estilo de trazo (blanco vibrante, redondeado y suave)
         this.ctx.strokeStyle = '#FFFFFF';
         this.ctx.lineWidth = 22;
@@ -308,110 +290,44 @@ class MatrixMindApp {
         this.canvas.addEventListener('mousemove', (e) => this.draw(e));
         this.canvas.addEventListener('mouseup', () => this.stopDrawing());
         this.canvas.addEventListener('mouseleave', () => this.stopDrawing());
-
+        
         // Eventos Táctiles (Móvil/PWA)
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             this.startDrawing(e.touches[0]);
         }, { passive: false });
-
+        
         this.canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
             this.draw(e.touches[0]);
         }, { passive: false });
-
+        
         this.canvas.addEventListener('touchend', (e) => {
             e.preventDefault();
             this.stopDrawing();
         }, { passive: false });
-
+        
         // Botones de acción principal
         this.clearBtn.addEventListener('click', () => this.clearCanvas());
         this.recognizeBtn.addEventListener('click', () => this.recognizeAndSend());
-
-        // Gestión de Pestañas (Tabs Navigation)
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const targetTab = btn.getAttribute('data-tab');
-                if (targetTab) this.switchTab(targetTab);
-            });
+        
+        // Gestión de Modal Configuración
+        this.openSettingsBtn.addEventListener('click', () => this.openModal());
+        this.closeSettingsBtn.addEventListener('click', () => this.closeModal());
+        this.settingsModal.addEventListener('click', (e) => {
+            if (e.target === this.settingsModal) this.closeModal();
         });
-
-        if (this.openSettingsBtn) {
-            this.openSettingsBtn.addEventListener('click', () => this.switchTab('pane-settings'));
-        }
-
-        const goToDomoticsLink = document.getElementById('goToDomoticsLink');
-        if (goToDomoticsLink) {
-            goToDomoticsLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.switchTab('pane-domotics');
-            });
-        }
-
-        // Acciones Rápidas de Domótica en Pestaña Lienzo
-        const quickLampOn = document.getElementById('quickLampOnBtn');
-        const quickLampOff = document.getElementById('quickLampOffBtn');
-        const quickAlarmOn = document.getElementById('quickAlarmOnBtn');
-        const quickAlarmOff = document.getElementById('quickAlarmOffBtn');
-
-        if (quickLampOn) quickLampOn.addEventListener('click', () => this.executeDomoticsAction('lamp_on'));
-        if (quickLampOff) quickLampOff.addEventListener('click', () => this.executeDomoticsAction('lamp_off'));
-        if (quickAlarmOn) quickAlarmOn.addEventListener('click', () => this.executeDomoticsAction('alarm_on'));
-        if (quickAlarmOff) quickAlarmOff.addEventListener('click', () => this.executeDomoticsAction('alarm_off'));
-
-        // Botones de Prueba en Tarjetas de Domótica
-        const testLampOn = document.getElementById('testLampOnBtn');
-        const testLampOff = document.getElementById('testLampOffBtn');
-        const testAlarmOn = document.getElementById('testAlarmOnBtn');
-        const testAlarmOff = document.getElementById('testAlarmOffBtn');
-
-        if (testLampOn) testLampOn.addEventListener('click', () => this.executeDomoticsAction('lamp_on'));
-        if (testLampOff) testLampOff.addEventListener('click', () => this.executeDomoticsAction('lamp_off'));
-        if (testAlarmOn) testAlarmOn.addEventListener('click', () => this.executeDomoticsAction('alarm_on'));
-        if (testAlarmOff) testAlarmOff.addEventListener('click', () => this.executeDomoticsAction('alarm_off'));
-
-        // Botones para Enseñar Trazo Dibujado en Lienzo a la Domótica
-        const trainLampOn = document.getElementById('trainLampOnBtn');
-        const trainLampOff = document.getElementById('trainLampOffBtn');
-        const trainAlarmOn = document.getElementById('trainAlarmOnBtn');
-        const trainAlarmOff = document.getElementById('trainAlarmOffBtn');
-
-        if (trainLampOn) trainLampOn.addEventListener('click', () => this.trainDomoticsAction('lamp_on'));
-        if (trainLampOff) trainLampOff.addEventListener('click', () => this.trainDomoticsAction('lamp_off'));
-        if (trainAlarmOn) trainAlarmOn.addEventListener('click', () => this.trainDomoticsAction('alarm_on'));
-        if (trainAlarmOff) trainAlarmOff.addEventListener('click', () => this.trainDomoticsAction('alarm_off'));
-
-        // Guardar Cambios de Domótica
-        const saveDomotics = document.getElementById('saveDomoticsBtn');
-        if (saveDomotics) saveDomotics.addEventListener('click', () => this.saveDomoticsConfig());
-
-        const alarmDurationSelect = document.getElementById('alarmDurationSelect');
-        if (alarmDurationSelect) {
-            alarmDurationSelect.addEventListener('change', () => {
-                const val = parseInt(alarmDurationSelect.value, 10) || 3;
-                const badge = document.getElementById('durationBadgeText');
-                if (badge) badge.textContent = `${val} Segundos`;
-                // Guardar y sincronizar duración de inmediato en la configuración
-                this.domoticsConfig.alarmOn.duration = val;
-                localStorage.setItem('matrixmind_domotics_config', JSON.stringify(this.domoticsConfig));
-                this.showToast(`⏱️ Tiempo de alarma ajustado a ${val} segundos`);
-            });
-        }
-
-        // Configuración de Hardware ESP32
-        if (this.esp32IpInput) {
-            this.esp32IpInput.addEventListener('input', () => {
-                const ip = this.esp32IpInput.value.trim() || '192.168.0.137';
-                if (this.endpointPreview) this.endpointPreview.textContent = `http://${ip}/api/set-character`;
-            });
-        }
-
-        if (this.testConnectionBtn) this.testConnectionBtn.addEventListener('click', () => this.testESP32Connection());
-        if (this.saveSettingsBtn) this.saveSettingsBtn.addEventListener('click', () => this.saveSettings());
-
-        // Botón de aprendizaje alfanumérico
-        if (this.trainBtn) this.trainBtn.addEventListener('click', () => this.trainOnDevice());
+        
+        this.esp32IpInput.addEventListener('input', () => {
+            const ip = this.esp32IpInput.value.trim() || '192.168.0.137';
+            this.endpointPreview.textContent = `http://${ip}/api/set-character`;
+        });
+        
+        this.testConnectionBtn.addEventListener('click', () => this.testESP32Connection());
+        this.saveSettingsBtn.addEventListener('click', () => this.saveSettings());
+        
+        // Botón de aprendizaje
+        this.trainBtn.addEventListener('click', () => this.trainOnDevice());
         if (this.clearTemplatesBtn) {
             this.clearTemplatesBtn.addEventListener('click', () => this.clearAllCustomTemplates());
         }
@@ -425,43 +341,6 @@ class MatrixMindApp {
             this.sendPhraseBtn.addEventListener('click', () => this.sendPhraseToESP32());
             this.phraseInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') this.sendPhraseToESP32();
-            });
-        }
-
-        // Botón para limpiar campo de marquesina
-        const clearPhraseInputBtn = document.getElementById('clearPhraseInputBtn');
-        if (clearPhraseInputBtn && this.phraseInput) {
-            clearPhraseInputBtn.addEventListener('click', () => {
-                this.phraseInput.value = '';
-                this.phraseInput.focus();
-            });
-        }
-
-        // Chips de frases rápidas asistenciales
-        document.querySelectorAll('.phrase-chip').forEach(chip => {
-            chip.addEventListener('click', () => {
-                const phrase = chip.getAttribute('data-phrase');
-                if (phrase && this.phraseInput) {
-                    this.phraseInput.value = phrase;
-                    this.sendPhraseToESP32();
-                }
-            });
-        });
-
-        // Botón para reenviar el último carácter reconocido
-        const resendCharBtn = document.getElementById('resendCharBtn');
-        if (resendCharBtn) {
-            resendCharBtn.addEventListener('click', () => {
-                if (this.lastSentPayload) {
-                    this.sendToESP32(this.lastSentPayload.character, this.lastSentPayload.extraPayload);
-                } else {
-                    const char = this.predictionChar ? this.predictionChar.textContent.trim() : '';
-                    if (char && char !== '-') {
-                        this.sendToESP32(char);
-                    } else {
-                        this.showToast('⚠️ Dibuja o selecciona primero un símbolo para reenviar');
-                    }
-                }
             });
         }
     }
@@ -483,12 +362,12 @@ class MatrixMindApp {
         this.isDrawing = true;
         this.hasDrawn = true;
         this.canvasHint.classList.add('hidden');
-
+        
         if (this.debounceTimer) {
             clearTimeout(this.debounceTimer);
             this.debounceTimer = null;
         }
-
+        
         const pos = this.getCoordinates(e);
         this.ctx.beginPath();
         this.ctx.moveTo(pos.x, pos.y);
@@ -505,7 +384,7 @@ class MatrixMindApp {
         if (!this.isDrawing) return;
         this.isDrawing = false;
         this.ctx.closePath();
-
+        
         // Si el envío automático está activo, lanzamos el reconocimiento tras un breve retraso (650ms)
         if (this.hasDrawn && this.autoSend) {
             this.debounceTimer = setTimeout(() => {
@@ -523,7 +402,7 @@ class MatrixMindApp {
         this.predictionDetails.textContent = 'Esperando trazo...';
         this.confidenceBar.style.width = '0%';
         this.confidenceLabel.textContent = 'Nivel de Coincidencia';
-
+        
         if (this.debounceTimer) clearTimeout(this.debounceTimer);
     }
 
@@ -535,11 +414,11 @@ class MatrixMindApp {
             // 1. Convertir el lienzo en un tensor 3D [320, 320, 1]
             const imgTensor = tf.browser.fromPixels(this.canvas, 1);
             const data = imgTensor.dataSync();
-
+            
             // 2. Encontrar el Bounding Box del trazo (píxeles blancos > 40)
             let minX = this.canvas.width, minY = this.canvas.height, maxX = 0, maxY = 0;
             let foundPixel = false;
-
+            
             for (let y = 0; y < this.canvas.height; y++) {
                 for (let x = 0; x < this.canvas.width; x++) {
                     const val = data[y * this.canvas.width + x];
@@ -560,7 +439,7 @@ class MatrixMindApp {
             const height = maxY - minY;
             const maxDim = Math.max(width, height);
             const pad = Math.round(maxDim * 0.22); // 22% de padding para mantener contornos claros
-
+            
             const boxX = Math.max(0, minX - pad);
             const boxY = Math.max(0, minY - pad);
             const boxW = Math.min(this.canvas.width - boxX, width + pad * 2);
@@ -573,7 +452,7 @@ class MatrixMindApp {
             const cropped = imgTensor.slice([boxY, boxX, 0], [boxH, boxW, 1]);
             const resized = tf.image.resizeBilinear(cropped, [28, 28]);
             const normalized = resized.div(255.0);
-
+            
             return normalized;
         });
     }
@@ -586,7 +465,7 @@ class MatrixMindApp {
         return tf.tidy(() => {
             const flat = tensor28.flatten();
             const data = flat.dataSync();
-
+            
             // 1. Grilla de ultra-alta resolución 7x7 (49 celdas) con normalización vectorial (Cosine Similarity)
             const grid7x7 = new Array(49).fill(0);
             for (let y = 0; y < 28; y++) {
@@ -623,7 +502,7 @@ class MatrixMindApp {
                     grid3x3[gy * 3 + gx] += val / (28 * 28 / 9);
                 }
             }
-
+            
             // 4. Perfiles de proyección Horizontal y Vertical (8 bandas cada uno)
             const hProfile = new Array(8).fill(0);
             const vProfile = new Array(8).fill(0);
@@ -656,7 +535,7 @@ class MatrixMindApp {
             for (let y = 4; y < 24; y++) {
                 for (let x = 0; x < 5; x++) leftBar += data[y * 28 + x];
                 for (let x = 23; x < 28; x++) rightBar += data[y * 28 + x];
-
+                
                 let firstX = 28;
                 for (let x = 0; x < 18; x++) {
                     if (data[y * 28 + x] > 0.35) { firstX = x; break; }
@@ -822,7 +701,7 @@ class MatrixMindApp {
         const fallback = {};
         for (const charCode of this.classes) {
             fallback[charCode] = {
-                grid7x7: new Array(49).fill(1 / 7),
+                grid7x7: new Array(49).fill(1/7),
                 grid5x5: new Array(25).fill(0.2),
                 grid3x3: new Array(9).fill(0.3),
                 hProfile: [0.1, 0.3, 0.6, 0.8, 0.8, 0.6, 0.3, 0.1],
@@ -835,288 +714,288 @@ class MatrixMindApp {
         }
 
         fallback['1'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.1, 0.2, 0.9, 0.2, 0.1, 0.1, 0.2, 0.9, 0.2, 0.1, 0.1, 0.2, 0.9, 0.2, 0.1, 0.1, 0.2, 0.9, 0.2, 0.1, 0.1, 0.2, 0.9, 0.2, 0.1],
-            hProfile: [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3], vProfile: [0.0, 0.1, 0.2, 0.9, 0.9, 0.2, 0.1, 0.0],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.1,0.2,0.9,0.2,0.1, 0.1,0.2,0.9,0.2,0.1, 0.1,0.2,0.9,0.2,0.1, 0.1,0.2,0.9,0.2,0.1, 0.1,0.2,0.9,0.2,0.1],
+            hProfile: [0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3], vProfile: [0.0,0.1,0.2,0.9,0.9,0.2,0.1,0.0],
             topLeft: 0.1, topRight: 0.1, bottomLeft: 0.1, bottomRight: 0.1,
             leftBar: 0.1, rightBar: 0.1, topBar: 0.2, bottomBar: 0.3,
             stemStraightness: 0.95, vCrossingsMiddle: 1, hCrossingsMiddle: 1, loops: 0, aspectRatio: 0.35
         };
 
         fallback['A'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.1, 0.5, 0.8, 0.5, 0.1, 0.3, 0.8, 0.2, 0.8, 0.3, 0.8, 0.9, 0.9, 0.9, 0.8, 0.8, 0.2, 0.1, 0.2, 0.8, 0.9, 0.1, 0.1, 0.1, 0.9],
-            hProfile: [0.6, 0.7, 0.8, 0.9, 0.7, 0.7, 0.7, 0.8], vProfile: [0.7, 0.7, 0.6, 0.6, 0.6, 0.7, 0.7, 0.7],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.1,0.5,0.8,0.5,0.1, 0.3,0.8,0.2,0.8,0.3, 0.8,0.9,0.9,0.9,0.8, 0.8,0.2,0.1,0.2,0.8, 0.9,0.1,0.1,0.1,0.9],
+            hProfile: [0.6,0.7,0.8,0.9,0.7,0.7,0.7,0.8], vProfile: [0.7,0.7,0.6,0.6,0.6,0.7,0.7,0.7],
             topLeft: 0.05, topRight: 0.05, bottomLeft: 0.88, bottomRight: 0.88,
             leftBar: 0.6, rightBar: 0.6, topBar: 0.7, bottomBar: 0.8,
             stemStraightness: 0.3, vCrossingsMiddle: 2, hCrossingsMiddle: 2, loops: 1, aspectRatio: 0.82
         };
 
         fallback['4'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.8, 0.1, 0.1, 0.8, 0.2, 0.8, 0.1, 0.1, 0.8, 0.2, 0.9, 0.9, 0.9, 0.9, 0.9, 0.1, 0.1, 0.1, 0.9, 0.2, 0.1, 0.1, 0.1, 0.9, 0.2],
-            hProfile: [0.6, 0.6, 0.7, 0.9, 0.5, 0.5, 0.5, 0.6], vProfile: [0.6, 0.6, 0.5, 0.5, 0.9, 0.9, 0.3, 0.1],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.8,0.1,0.1,0.8,0.2, 0.8,0.1,0.1,0.8,0.2, 0.9,0.9,0.9,0.9,0.9, 0.1,0.1,0.1,0.9,0.2, 0.1,0.1,0.1,0.9,0.2],
+            hProfile: [0.6,0.6,0.7,0.9,0.5,0.5,0.5,0.6], vProfile: [0.6,0.6,0.5,0.5,0.9,0.9,0.3,0.1],
             topLeft: 0.75, topRight: 0.65, bottomLeft: 0.05, bottomRight: 0.92,
             leftBar: 0.5, rightBar: 0.95, topBar: 0.6, bottomBar: 0.6,
             stemStraightness: 0.4, vCrossingsMiddle: 2, hCrossingsMiddle: 2, loops: 0, aspectRatio: 0.78
         };
 
         fallback['D'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.9, 0.9, 0.9, 0.6, 0.1, 0.9, 0.2, 0.1, 0.8, 0.2, 0.9, 0.1, 0.1, 0.9, 0.2, 0.9, 0.2, 0.1, 0.8, 0.2, 0.9, 0.9, 0.9, 0.6, 0.1],
-            hProfile: [0.8, 0.6, 0.5, 0.5, 0.5, 0.5, 0.6, 0.8], vProfile: [0.9, 0.5, 0.3, 0.3, 0.4, 0.7, 0.8, 0.2],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.9,0.9,0.9,0.6,0.1, 0.9,0.2,0.1,0.8,0.2, 0.9,0.1,0.1,0.9,0.2, 0.9,0.2,0.1,0.8,0.2, 0.9,0.9,0.9,0.6,0.1],
+            hProfile: [0.8,0.6,0.5,0.5,0.5,0.5,0.6,0.8], vProfile: [0.9,0.5,0.3,0.3,0.4,0.7,0.8,0.2],
             topLeft: 0.88, topRight: 0.8, bottomLeft: 0.88, bottomRight: 0.8,
             leftBar: 0.9, rightBar: 0.8, topBar: 0.8, bottomBar: 0.8,
             stemStraightness: 0.96, vCrossingsMiddle: 2, hCrossingsMiddle: 2, loops: 1, aspectRatio: 0.82
         };
 
         fallback['0'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.2, 0.8, 0.8, 0.8, 0.2, 0.8, 0.2, 0.1, 0.2, 0.8, 0.8, 0.1, 0.1, 0.1, 0.8, 0.8, 0.2, 0.1, 0.2, 0.8, 0.2, 0.8, 0.8, 0.8, 0.2],
-            hProfile: [0.7, 0.6, 0.5, 0.5, 0.5, 0.5, 0.6, 0.7], vProfile: [0.6, 0.7, 0.5, 0.4, 0.4, 0.5, 0.7, 0.6],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.2,0.8,0.8,0.8,0.2, 0.8,0.2,0.1,0.2,0.8, 0.8,0.1,0.1,0.1,0.8, 0.8,0.2,0.1,0.2,0.8, 0.2,0.8,0.8,0.8,0.2],
+            hProfile: [0.7,0.6,0.5,0.5,0.5,0.5,0.6,0.7], vProfile: [0.6,0.7,0.5,0.4,0.4,0.5,0.7,0.6],
             topLeft: 0.08, topRight: 0.08, bottomLeft: 0.08, bottomRight: 0.08,
             leftBar: 0.45, rightBar: 0.45, topBar: 0.5, bottomBar: 0.5,
             stemStraightness: 0.1, vCrossingsMiddle: 2, hCrossingsMiddle: 2, loops: 1, aspectRatio: 0.78
         };
 
         fallback['2'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.3, 0.8, 0.8, 0.8, 0.2, 0.8, 0.2, 0.1, 0.2, 0.8, 0.1, 0.2, 0.8, 0.8, 0.1, 0.2, 0.8, 0.2, 0.1, 0.1, 0.9, 0.9, 0.9, 0.9, 0.9],
-            hProfile: [0.7, 0.5, 0.6, 0.6, 0.6, 0.6, 0.7, 0.9], vProfile: [0.7, 0.7, 0.6, 0.5, 0.5, 0.7, 0.8, 0.5],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.3,0.8,0.8,0.8,0.2, 0.8,0.2,0.1,0.2,0.8, 0.1,0.2,0.8,0.8,0.1, 0.2,0.8,0.2,0.1,0.1, 0.9,0.9,0.9,0.9,0.9],
+            hProfile: [0.7,0.5,0.6,0.6,0.6,0.6,0.7,0.9], vProfile: [0.7,0.7,0.6,0.5,0.5,0.7,0.8,0.5],
             topLeft: 0.35, topRight: 0.82, bottomLeft: 0.85, bottomRight: 0.85,
             leftBar: 0.4, rightBar: 0.5, topBar: 0.65, bottomBar: 0.96,
             stemStraightness: 0.2, vCrossingsMiddle: 3, hCrossingsMiddle: 2, loops: 0, aspectRatio: 0.78
         };
 
         fallback['3'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.8, 0.9, 0.9, 0.9, 0.8, 0.1, 0.1, 0.1, 0.2, 0.8, 0.2, 0.8, 0.9, 0.8, 0.2, 0.1, 0.1, 0.1, 0.2, 0.8, 0.8, 0.9, 0.9, 0.9, 0.8],
-            hProfile: [0.8, 0.5, 0.6, 0.8, 0.6, 0.5, 0.6, 0.8], vProfile: [0.5, 0.5, 0.4, 0.4, 0.6, 0.8, 0.9, 0.6],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.8,0.9,0.9,0.9,0.8, 0.1,0.1,0.1,0.2,0.8, 0.2,0.8,0.9,0.8,0.2, 0.1,0.1,0.1,0.2,0.8, 0.8,0.9,0.9,0.9,0.8],
+            hProfile: [0.8,0.5,0.6,0.8,0.6,0.5,0.6,0.8], vProfile: [0.5,0.5,0.4,0.4,0.6,0.8,0.9,0.6],
             topLeft: 0.7, topRight: 0.8, bottomLeft: 0.7, bottomRight: 0.8,
             leftBar: 0.15, rightBar: 0.75, topBar: 0.85, bottomBar: 0.85,
             stemStraightness: 0.2, vCrossingsMiddle: 3, hCrossingsMiddle: 2, loops: 0, aspectRatio: 0.76
         };
 
         fallback['6'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.2, 0.8, 0.8, 0.8, 0.2, 0.8, 0.2, 0.1, 0.1, 0.1, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.2, 0.1, 0.2, 0.8, 0.2, 0.8, 0.8, 0.8, 0.2],
-            hProfile: [0.7, 0.6, 0.6, 0.8, 0.6, 0.6, 0.6, 0.7], vProfile: [0.7, 0.7, 0.6, 0.5, 0.5, 0.6, 0.7, 0.5],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.2,0.8,0.8,0.8,0.2, 0.8,0.2,0.1,0.1,0.1, 0.8,0.8,0.8,0.8,0.8, 0.8,0.2,0.1,0.2,0.8, 0.2,0.8,0.8,0.8,0.2],
+            hProfile: [0.7,0.6,0.6,0.8,0.6,0.6,0.6,0.7], vProfile: [0.7,0.7,0.6,0.5,0.5,0.6,0.7,0.5],
             topLeft: 0.4, topRight: 0.1, bottomLeft: 0.6, bottomRight: 0.6,
             leftBar: 0.75, rightBar: 0.45, topBar: 0.6, bottomBar: 0.7,
             stemStraightness: 0.25, vCrossingsMiddle: 2, hCrossingsMiddle: 2, loops: 1, aspectRatio: 0.78
         };
 
         fallback['7'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.9, 0.9, 0.9, 0.9, 0.9, 0.1, 0.1, 0.2, 0.8, 0.2, 0.1, 0.2, 0.8, 0.2, 0.1, 0.2, 0.8, 0.2, 0.1, 0.1, 0.8, 0.2, 0.1, 0.1, 0.1],
-            hProfile: [0.9, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4], vProfile: [0.4, 0.5, 0.6, 0.7, 0.6, 0.5, 0.4, 0.3],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.9,0.9,0.9,0.9,0.9, 0.1,0.1,0.2,0.8,0.2, 0.1,0.2,0.8,0.2,0.1, 0.2,0.8,0.2,0.1,0.1, 0.8,0.2,0.1,0.1,0.1],
+            hProfile: [0.9,0.4,0.4,0.4,0.4,0.4,0.4,0.4], vProfile: [0.4,0.5,0.6,0.7,0.6,0.5,0.4,0.3],
             topLeft: 0.88, topRight: 0.88, bottomLeft: 0.15, bottomRight: 0.15,
             leftBar: 0.3, rightBar: 0.3, topBar: 0.95, bottomBar: 0.2,
             stemStraightness: 0.8, vCrossingsMiddle: 1, hCrossingsMiddle: 1, loops: 0, aspectRatio: 0.75
         };
 
         fallback['8'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.2, 0.8, 0.8, 0.8, 0.2, 0.8, 0.2, 0.1, 0.2, 0.8, 0.2, 0.8, 0.8, 0.8, 0.2, 0.8, 0.2, 0.1, 0.2, 0.8, 0.2, 0.8, 0.8, 0.8, 0.2],
-            hProfile: [0.7, 0.6, 0.6, 0.8, 0.6, 0.6, 0.6, 0.7], vProfile: [0.6, 0.7, 0.6, 0.5, 0.5, 0.6, 0.7, 0.6],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.2,0.8,0.8,0.8,0.2, 0.8,0.2,0.1,0.2,0.8, 0.2,0.8,0.8,0.8,0.2, 0.8,0.2,0.1,0.2,0.8, 0.2,0.8,0.8,0.8,0.2],
+            hProfile: [0.7,0.6,0.6,0.8,0.6,0.6,0.6,0.7], vProfile: [0.6,0.7,0.6,0.5,0.5,0.6,0.7,0.6],
             topLeft: 0.35, topRight: 0.35, bottomLeft: 0.35, bottomRight: 0.35,
             leftBar: 0.5, rightBar: 0.5, topBar: 0.65, bottomBar: 0.65,
             stemStraightness: 0.1, vCrossingsMiddle: 3, hCrossingsMiddle: 2, loops: 2, aspectRatio: 0.78
         };
 
         fallback['9'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.2, 0.8, 0.8, 0.8, 0.2, 0.8, 0.2, 0.1, 0.2, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.1, 0.1, 0.1, 0.2, 0.8, 0.2, 0.8, 0.8, 0.8, 0.2],
-            hProfile: [0.7, 0.6, 0.6, 0.8, 0.5, 0.5, 0.6, 0.7], vProfile: [0.5, 0.6, 0.5, 0.5, 0.6, 0.7, 0.7, 0.6],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.2,0.8,0.8,0.8,0.2, 0.8,0.2,0.1,0.2,0.8, 0.8,0.8,0.8,0.8,0.8, 0.1,0.1,0.1,0.2,0.8, 0.2,0.8,0.8,0.8,0.2],
+            hProfile: [0.7,0.6,0.6,0.8,0.5,0.5,0.6,0.7], vProfile: [0.5,0.6,0.5,0.5,0.6,0.7,0.7,0.6],
             topLeft: 0.6, topRight: 0.6, bottomLeft: 0.1, bottomRight: 0.4,
             leftBar: 0.45, rightBar: 0.75, topBar: 0.7, bottomBar: 0.6,
             stemStraightness: 0.25, vCrossingsMiddle: 2, hCrossingsMiddle: 2, loops: 1, aspectRatio: 0.78
         };
 
         fallback['C'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.2, 0.8, 0.8, 0.8, 0.2, 0.8, 0.2, 0.1, 0.1, 0.1, 0.8, 0.1, 0.1, 0.1, 0.1, 0.8, 0.2, 0.1, 0.1, 0.1, 0.2, 0.8, 0.8, 0.8, 0.2],
-            hProfile: [0.7, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.7], vProfile: [0.7, 0.6, 0.4, 0.3, 0.3, 0.4, 0.6, 0.4],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.2,0.8,0.8,0.8,0.2, 0.8,0.2,0.1,0.1,0.1, 0.8,0.1,0.1,0.1,0.1, 0.8,0.2,0.1,0.1,0.1, 0.2,0.8,0.8,0.8,0.2],
+            hProfile: [0.7,0.5,0.5,0.5,0.5,0.5,0.5,0.7], vProfile: [0.7,0.6,0.4,0.3,0.3,0.4,0.6,0.4],
             topLeft: 0.2, topRight: 0.2, bottomLeft: 0.2, bottomRight: 0.2,
             leftBar: 0.65, rightBar: 0.15, topBar: 0.65, bottomBar: 0.65,
             stemStraightness: 0.15, vCrossingsMiddle: 2, hCrossingsMiddle: 1, loops: 0, aspectRatio: 0.78
         };
 
         fallback['E'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.9, 0.9, 0.9, 0.9, 0.8, 0.8, 0.2, 0.1, 0.1, 0.1, 0.9, 0.9, 0.8, 0.2, 0.1, 0.8, 0.2, 0.1, 0.1, 0.1, 0.9, 0.9, 0.9, 0.9, 0.8],
-            hProfile: [0.9, 0.5, 0.5, 0.8, 0.5, 0.5, 0.5, 0.9], vProfile: [0.9, 0.6, 0.5, 0.4, 0.4, 0.5, 0.6, 0.4],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.9,0.9,0.9,0.9,0.8, 0.8,0.2,0.1,0.1,0.1, 0.9,0.9,0.8,0.2,0.1, 0.8,0.2,0.1,0.1,0.1, 0.9,0.9,0.9,0.9,0.8],
+            hProfile: [0.9,0.5,0.5,0.8,0.5,0.5,0.5,0.9], vProfile: [0.9,0.6,0.5,0.4,0.4,0.5,0.6,0.4],
             topLeft: 0.88, topRight: 0.8, bottomLeft: 0.88, bottomRight: 0.8,
             leftBar: 0.9, rightBar: 0.2, topBar: 0.9, bottomBar: 0.9,
             stemStraightness: 0.96, vCrossingsMiddle: 3, hCrossingsMiddle: 1, loops: 0, aspectRatio: 0.76
         };
 
         fallback['S'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.2, 0.8, 0.8, 0.8, 0.8, 0.8, 0.2, 0.1, 0.1, 0.1, 0.2, 0.8, 0.8, 0.8, 0.2, 0.1, 0.1, 0.1, 0.2, 0.8, 0.8, 0.8, 0.8, 0.8, 0.2],
-            hProfile: [0.8, 0.6, 0.5, 0.7, 0.5, 0.6, 0.6, 0.8], vProfile: [0.6, 0.6, 0.5, 0.5, 0.5, 0.6, 0.7, 0.6],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.2,0.8,0.8,0.8,0.8, 0.8,0.2,0.1,0.1,0.1, 0.2,0.8,0.8,0.8,0.2, 0.1,0.1,0.1,0.2,0.8, 0.8,0.8,0.8,0.8,0.2],
+            hProfile: [0.8,0.6,0.5,0.7,0.5,0.6,0.6,0.8], vProfile: [0.6,0.6,0.5,0.5,0.5,0.6,0.7,0.6],
             topLeft: 0.7, topRight: 0.7, bottomLeft: 0.7, bottomRight: 0.7,
             leftBar: 0.45, rightBar: 0.45, topBar: 0.8, bottomBar: 0.8,
             stemStraightness: 0.15, vCrossingsMiddle: 3, hCrossingsMiddle: 2, loops: 0, aspectRatio: 0.76
         };
 
         fallback['Z'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.9, 0.9, 0.9, 0.9, 0.9, 0.1, 0.1, 0.2, 0.8, 0.2, 0.1, 0.2, 0.8, 0.2, 0.1, 0.2, 0.8, 0.2, 0.1, 0.1, 0.9, 0.9, 0.9, 0.9, 0.9],
-            hProfile: [0.9, 0.4, 0.5, 0.5, 0.5, 0.5, 0.4, 0.9], vProfile: [0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.9,0.9,0.9,0.9,0.9, 0.1,0.1,0.2,0.8,0.2, 0.1,0.2,0.8,0.2,0.1, 0.2,0.8,0.2,0.1,0.1, 0.9,0.9,0.9,0.9,0.9],
+            hProfile: [0.9,0.4,0.5,0.5,0.5,0.5,0.4,0.9], vProfile: [0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6],
             topLeft: 0.88, topRight: 0.88, bottomLeft: 0.88, bottomRight: 0.88,
             leftBar: 0.4, rightBar: 0.4, topBar: 0.96, bottomBar: 0.96,
             stemStraightness: 0.2, vCrossingsMiddle: 3, hCrossingsMiddle: 2, loops: 0, aspectRatio: 0.78
         };
 
         fallback['B'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.9, 0.9, 0.8, 0.6, 0.1, 0.9, 0.2, 0.1, 0.8, 0.2, 0.9, 0.9, 0.9, 0.7, 0.1, 0.9, 0.2, 0.1, 0.8, 0.2, 0.9, 0.9, 0.8, 0.6, 0.1],
-            hProfile: [0.8, 0.6, 0.8, 0.9, 0.6, 0.6, 0.6, 0.8], vProfile: [0.9, 0.5, 0.4, 0.4, 0.5, 0.7, 0.6, 0.2],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.9,0.9,0.8,0.6,0.1, 0.9,0.2,0.1,0.8,0.2, 0.9,0.9,0.9,0.7,0.1, 0.9,0.2,0.1,0.8,0.2, 0.9,0.9,0.8,0.6,0.1],
+            hProfile: [0.8,0.6,0.8,0.9,0.6,0.6,0.6,0.8], vProfile: [0.9,0.5,0.4,0.4,0.5,0.7,0.6,0.2],
             topLeft: 0.88, topRight: 0.3, bottomLeft: 0.88, bottomRight: 0.3,
             leftBar: 0.9, rightBar: 0.5, topBar: 0.75, bottomBar: 0.75,
             stemStraightness: 0.96, vCrossingsMiddle: 3, hCrossingsMiddle: 2, loops: 2, aspectRatio: 0.78
         };
 
         fallback['G'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.2, 0.8, 0.8, 0.8, 0.2, 0.8, 0.2, 0.1, 0.1, 0.1, 0.8, 0.1, 0.1, 0.8, 0.8, 0.8, 0.2, 0.1, 0.2, 0.8, 0.2, 0.8, 0.8, 0.8, 0.2],
-            hProfile: [0.7, 0.5, 0.5, 0.7, 0.5, 0.5, 0.6, 0.7], vProfile: [0.7, 0.6, 0.4, 0.4, 0.5, 0.7, 0.6, 0.4],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.2,0.8,0.8,0.8,0.2, 0.8,0.2,0.1,0.1,0.1, 0.8,0.1,0.1,0.8,0.8, 0.8,0.2,0.1,0.2,0.8, 0.2,0.8,0.8,0.8,0.2],
+            hProfile: [0.7,0.5,0.5,0.7,0.5,0.5,0.6,0.7], vProfile: [0.7,0.6,0.4,0.4,0.5,0.7,0.6,0.4],
             topLeft: 0.15, topRight: 0.25, bottomLeft: 0.3, bottomRight: 0.75,
             leftBar: 0.65, rightBar: 0.5, topBar: 0.65, bottomBar: 0.75,
             stemStraightness: 0.15, vCrossingsMiddle: 2, hCrossingsMiddle: 2, loops: 0, aspectRatio: 0.80
         };
 
         fallback['Ñ'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.8, 0.9, 0.9, 0.9, 0.8, 0.8, 0.2, 0.1, 0.2, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.2, 0.1, 0.2, 0.8, 0.8, 0.1, 0.1, 0.1, 0.8],
-            hProfile: [0.9, 0.3, 0.8, 0.8, 0.6, 0.6, 0.6, 0.6], vProfile: [0.8, 0.7, 0.6, 0.6, 0.6, 0.7, 0.8, 0.4],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.8,0.9,0.9,0.9,0.8, 0.8,0.2,0.1,0.2,0.8, 0.8,0.8,0.8,0.8,0.8, 0.8,0.2,0.1,0.2,0.8, 0.8,0.1,0.1,0.1,0.8],
+            hProfile: [0.9,0.3,0.8,0.8,0.6,0.6,0.6,0.6], vProfile: [0.8,0.7,0.6,0.6,0.6,0.7,0.8,0.4],
             topLeft: 0.85, topRight: 0.85, bottomLeft: 0.85, bottomRight: 0.85,
             leftBar: 0.85, rightBar: 0.85, topBar: 0.95, bottomBar: 0.6,
             stemStraightness: 0.9, vCrossingsMiddle: 3, hCrossingsMiddle: 2, loops: 0, aspectRatio: 0.82
         };
 
         fallback['5'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.8, 0.9, 0.9, 0.9, 0.8, 0.8, 0.2, 0.1, 0.1, 0.1, 0.8, 0.9, 0.8, 0.6, 0.1, 0.1, 0.1, 0.1, 0.2, 0.8, 0.8, 0.8, 0.8, 0.8, 0.2],
-            hProfile: [0.9, 0.6, 0.7, 0.6, 0.5, 0.5, 0.6, 0.8], vProfile: [0.7, 0.6, 0.5, 0.5, 0.5, 0.6, 0.6, 0.4],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.8,0.9,0.9,0.9,0.8, 0.8,0.2,0.1,0.1,0.1, 0.8,0.9,0.8,0.6,0.1, 0.1,0.1,0.1,0.2,0.8, 0.8,0.8,0.8,0.8,0.2],
+            hProfile: [0.9,0.6,0.7,0.6,0.5,0.5,0.6,0.8], vProfile: [0.7,0.6,0.5,0.5,0.5,0.6,0.6,0.4],
             topLeft: 0.8, topRight: 0.7, bottomLeft: 0.15, bottomRight: 0.6,
             leftBar: 0.55, rightBar: 0.45, topBar: 0.85, bottomBar: 0.7,
             stemStraightness: 0.4, vCrossingsMiddle: 3, hCrossingsMiddle: 2, loops: 0, aspectRatio: 0.78
         };
 
         fallback['F'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.9, 0.9, 0.9, 0.9, 0.8, 0.8, 0.2, 0.1, 0.1, 0.1, 0.9, 0.8, 0.6, 0.1, 0.1, 0.8, 0.2, 0.1, 0.1, 0.1, 0.8, 0.1, 0.1, 0.1, 0.1],
-            hProfile: [0.9, 0.5, 0.7, 0.4, 0.4, 0.4, 0.4, 0.5], vProfile: [0.9, 0.6, 0.4, 0.3, 0.3, 0.3, 0.3, 0.2],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.9,0.9,0.9,0.9,0.8, 0.8,0.2,0.1,0.1,0.1, 0.9,0.8,0.6,0.1,0.1, 0.8,0.2,0.1,0.1,0.1, 0.8,0.1,0.1,0.1,0.1],
+            hProfile: [0.9,0.5,0.7,0.4,0.4,0.4,0.4,0.5], vProfile: [0.9,0.6,0.4,0.3,0.3,0.3,0.3,0.2],
             topLeft: 0.88, topRight: 0.8, bottomLeft: 0.88, bottomRight: 0.1,
             leftBar: 0.9, rightBar: 0.2, topBar: 0.9, bottomBar: 0.2,
             stemStraightness: 0.96, vCrossingsMiddle: 2, hCrossingsMiddle: 1, loops: 0, aspectRatio: 0.75
         };
 
         fallback['H'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.8, 0.2, 0.1, 0.2, 0.8, 0.8, 0.2, 0.1, 0.2, 0.8, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.2, 0.1, 0.2, 0.8, 0.8, 0.2, 0.1, 0.2, 0.8],
-            hProfile: [0.6, 0.6, 0.9, 0.6, 0.6, 0.6, 0.6, 0.6], vProfile: [0.8, 0.5, 0.4, 0.4, 0.4, 0.4, 0.5, 0.8],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.8,0.2,0.1,0.2,0.8, 0.8,0.2,0.1,0.2,0.8, 0.9,0.9,0.9,0.9,0.9, 0.8,0.2,0.1,0.2,0.8, 0.8,0.2,0.1,0.2,0.8],
+            hProfile: [0.6,0.6,0.9,0.6,0.6,0.6,0.6,0.6], vProfile: [0.8,0.5,0.4,0.4,0.4,0.4,0.5,0.8],
             topLeft: 0.85, topRight: 0.85, bottomLeft: 0.85, bottomRight: 0.85,
             leftBar: 0.9, rightBar: 0.9, topBar: 0.3, bottomBar: 0.3,
             stemStraightness: 0.95, vCrossingsMiddle: 1, hCrossingsMiddle: 2, loops: 0, aspectRatio: 0.8
         };
 
         fallback['I'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.1, 0.2, 0.9, 0.2, 0.1, 0.1, 0.2, 0.9, 0.2, 0.1, 0.1, 0.2, 0.9, 0.2, 0.1, 0.1, 0.2, 0.9, 0.2, 0.1, 0.1, 0.2, 0.9, 0.2, 0.1],
-            hProfile: [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3], vProfile: [0.1, 0.2, 0.3, 0.9, 0.9, 0.3, 0.2, 0.1],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.1,0.2,0.9,0.2,0.1, 0.1,0.2,0.9,0.2,0.1, 0.1,0.2,0.9,0.2,0.1, 0.1,0.2,0.9,0.2,0.1, 0.1,0.2,0.9,0.2,0.1],
+            hProfile: [0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3], vProfile: [0.1,0.2,0.3,0.9,0.9,0.3,0.2,0.1],
             topLeft: 0.15, topRight: 0.15, bottomLeft: 0.15, bottomRight: 0.15,
             leftBar: 0.15, rightBar: 0.15, topBar: 0.3, bottomBar: 0.3,
             stemStraightness: 0.98, vCrossingsMiddle: 1, hCrossingsMiddle: 1, loops: 0, aspectRatio: 0.35
         };
 
         fallback['J'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.1, 0.1, 0.2, 0.8, 0.2, 0.1, 0.1, 0.2, 0.8, 0.2, 0.1, 0.1, 0.2, 0.8, 0.2, 0.8, 0.2, 0.2, 0.8, 0.2, 0.6, 0.8, 0.8, 0.6, 0.1],
-            hProfile: [0.3, 0.3, 0.3, 0.5, 0.7, 0.6, 0.5, 0.4], vProfile: [0.3, 0.4, 0.4, 0.6, 0.8, 0.6, 0.3, 0.2],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.1,0.1,0.2,0.8,0.2, 0.1,0.1,0.2,0.8,0.2, 0.1,0.1,0.2,0.8,0.2, 0.8,0.2,0.2,0.8,0.2, 0.6,0.8,0.8,0.6,0.1],
+            hProfile: [0.3,0.3,0.3,0.5,0.7,0.6,0.5,0.4], vProfile: [0.3,0.4,0.4,0.6,0.8,0.6,0.3,0.2],
             topLeft: 0.1, topRight: 0.7, bottomLeft: 0.8, bottomRight: 0.4,
             leftBar: 0.3, rightBar: 0.7, topBar: 0.5, bottomBar: 0.7,
             stemStraightness: 0.6, vCrossingsMiddle: 1, hCrossingsMiddle: 1, loops: 0, aspectRatio: 0.55
         };
 
         fallback['K'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.8, 0.2, 0.2, 0.8, 0.2, 0.8, 0.2, 0.8, 0.2, 0.1, 0.9, 0.9, 0.6, 0.1, 0.1, 0.8, 0.2, 0.8, 0.2, 0.1, 0.8, 0.2, 0.2, 0.8, 0.2],
-            hProfile: [0.6, 0.6, 0.7, 0.6, 0.6, 0.6, 0.6, 0.6], vProfile: [0.9, 0.6, 0.5, 0.4, 0.4, 0.5, 0.6, 0.6],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.8,0.2,0.2,0.8,0.2, 0.8,0.2,0.8,0.2,0.1, 0.9,0.9,0.6,0.1,0.1, 0.8,0.2,0.8,0.2,0.1, 0.8,0.2,0.2,0.8,0.2],
+            hProfile: [0.6,0.6,0.7,0.6,0.6,0.6,0.6,0.6], vProfile: [0.9,0.6,0.5,0.4,0.4,0.5,0.6,0.6],
             topLeft: 0.88, topRight: 0.8, bottomLeft: 0.88, bottomRight: 0.8,
             leftBar: 0.9, rightBar: 0.6, topBar: 0.6, bottomBar: 0.6,
             stemStraightness: 0.95, vCrossingsMiddle: 2, hCrossingsMiddle: 2, loops: 0, aspectRatio: 0.78
         };
 
         fallback['L'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.8, 0.2, 0.1, 0.1, 0.1, 0.8, 0.2, 0.1, 0.1, 0.1, 0.8, 0.2, 0.1, 0.1, 0.1, 0.8, 0.2, 0.1, 0.1, 0.1, 0.9, 0.9, 0.9, 0.9, 0.9],
-            hProfile: [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.5, 0.9], vProfile: [0.9, 0.4, 0.3, 0.3, 0.3, 0.3, 0.4, 0.5],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.8,0.2,0.1,0.1,0.1, 0.8,0.2,0.1,0.1,0.1, 0.8,0.2,0.1,0.1,0.1, 0.8,0.2,0.1,0.1,0.1, 0.9,0.9,0.9,0.9,0.9],
+            hProfile: [0.4,0.4,0.4,0.4,0.4,0.4,0.5,0.9], vProfile: [0.9,0.4,0.3,0.3,0.3,0.3,0.4,0.5],
             topLeft: 0.88, topRight: 0.1, bottomLeft: 0.88, bottomRight: 0.88,
             leftBar: 0.9, rightBar: 0.2, topBar: 0.3, bottomBar: 0.9,
             stemStraightness: 0.95, vCrossingsMiddle: 1, hCrossingsMiddle: 1, loops: 0, aspectRatio: 0.75
         };
 
         fallback['M'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.9, 0.2, 0.8, 0.2, 0.9, 0.9, 0.6, 0.6, 0.6, 0.9, 0.9, 0.2, 0.8, 0.2, 0.9, 0.8, 0.2, 0.1, 0.2, 0.8, 0.8, 0.2, 0.1, 0.2, 0.8],
-            hProfile: [0.7, 0.8, 0.7, 0.6, 0.6, 0.6, 0.6, 0.6], vProfile: [0.9, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.9],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.9,0.2,0.8,0.2,0.9, 0.9,0.6,0.6,0.6,0.9, 0.9,0.2,0.8,0.2,0.9, 0.8,0.2,0.1,0.2,0.8, 0.8,0.2,0.1,0.2,0.8],
+            hProfile: [0.7,0.8,0.7,0.6,0.6,0.6,0.6,0.6], vProfile: [0.9,0.6,0.6,0.6,0.6,0.6,0.6,0.9],
             topLeft: 0.88, topRight: 0.88, bottomLeft: 0.88, bottomRight: 0.88,
             leftBar: 0.9, rightBar: 0.9, topBar: 0.85, bottomBar: 0.6,
             stemStraightness: 0.88, vCrossingsMiddle: 3, hCrossingsMiddle: 2, loops: 0, aspectRatio: 0.92
         };
 
         fallback['N'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.9, 0.2, 0.1, 0.2, 0.8, 0.9, 0.8, 0.1, 0.2, 0.8, 0.8, 0.2, 0.8, 0.2, 0.8, 0.8, 0.2, 0.1, 0.8, 0.9, 0.8, 0.2, 0.1, 0.2, 0.9],
-            hProfile: [0.6, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.6], vProfile: [0.9, 0.6, 0.5, 0.5, 0.5, 0.5, 0.6, 0.9],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.9,0.2,0.1,0.2,0.8, 0.9,0.8,0.1,0.2,0.8, 0.8,0.2,0.8,0.2,0.8, 0.8,0.2,0.1,0.8,0.9, 0.8,0.2,0.1,0.2,0.9],
+            hProfile: [0.6,0.7,0.7,0.7,0.7,0.7,0.7,0.6], vProfile: [0.9,0.6,0.5,0.5,0.5,0.5,0.6,0.9],
             topLeft: 0.88, topRight: 0.88, bottomLeft: 0.88, bottomRight: 0.88,
             leftBar: 0.9, rightBar: 0.9, topBar: 0.7, bottomBar: 0.7,
             stemStraightness: 0.9, vCrossingsMiddle: 2, hCrossingsMiddle: 2, loops: 0, aspectRatio: 0.82
         };
 
         fallback['P'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.9, 0.9, 0.8, 0.6, 0.1, 0.9, 0.2, 0.1, 0.8, 0.2, 0.9, 0.9, 0.9, 0.7, 0.1, 0.9, 0.2, 0.1, 0.1, 0.1, 0.9, 0.2, 0.1, 0.1, 0.1],
-            hProfile: [0.8, 0.6, 0.8, 0.5, 0.4, 0.4, 0.4, 0.4], vProfile: [0.9, 0.5, 0.4, 0.4, 0.5, 0.6, 0.5, 0.2],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.9,0.9,0.8,0.6,0.1, 0.9,0.2,0.1,0.8,0.2, 0.9,0.9,0.9,0.7,0.1, 0.9,0.2,0.1,0.1,0.1, 0.9,0.2,0.1,0.1,0.1],
+            hProfile: [0.8,0.6,0.8,0.5,0.4,0.4,0.4,0.4], vProfile: [0.9,0.5,0.4,0.4,0.5,0.6,0.5,0.2],
             topLeft: 0.88, topRight: 0.6, bottomLeft: 0.88, bottomRight: 0.1,
             leftBar: 0.9, rightBar: 0.4, topBar: 0.8, bottomBar: 0.3,
             stemStraightness: 0.96, vCrossingsMiddle: 2, hCrossingsMiddle: 2, loops: 1, aspectRatio: 0.76
         };
 
         fallback['Q'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.2, 0.8, 0.8, 0.8, 0.2, 0.8, 0.2, 0.1, 0.2, 0.8, 0.8, 0.2, 0.1, 0.2, 0.8, 0.8, 0.2, 0.8, 0.8, 0.6, 0.2, 0.8, 0.8, 0.2, 0.9],
-            hProfile: [0.7, 0.6, 0.6, 0.7, 0.8, 0.7, 0.6, 0.8], vProfile: [0.6, 0.7, 0.6, 0.5, 0.6, 0.7, 0.8, 0.7],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.2,0.8,0.8,0.8,0.2, 0.8,0.2,0.1,0.2,0.8, 0.8,0.2,0.1,0.2,0.8, 0.8,0.2,0.8,0.8,0.6, 0.2,0.8,0.8,0.2,0.9],
+            hProfile: [0.7,0.6,0.6,0.7,0.8,0.7,0.6,0.8], vProfile: [0.6,0.7,0.6,0.5,0.6,0.7,0.8,0.7],
             topLeft: 0.6, topRight: 0.6, bottomLeft: 0.6, bottomRight: 0.92,
             leftBar: 0.6, rightBar: 0.7, topBar: 0.7, bottomBar: 0.8,
             stemStraightness: 0.2, vCrossingsMiddle: 2, hCrossingsMiddle: 2, loops: 1, aspectRatio: 0.8
         };
 
         fallback['R'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.9, 0.9, 0.8, 0.6, 0.1, 0.9, 0.2, 0.1, 0.8, 0.2, 0.9, 0.9, 0.9, 0.6, 0.1, 0.9, 0.2, 0.6, 0.8, 0.2, 0.9, 0.2, 0.1, 0.6, 0.8],
-            hProfile: [0.8, 0.6, 0.8, 0.7, 0.6, 0.6, 0.6, 0.7], vProfile: [0.9, 0.6, 0.5, 0.5, 0.6, 0.7, 0.7, 0.5],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.9,0.9,0.8,0.6,0.1, 0.9,0.2,0.1,0.8,0.2, 0.9,0.9,0.9,0.6,0.1, 0.9,0.2,0.6,0.8,0.2, 0.9,0.2,0.1,0.6,0.8],
+            hProfile: [0.8,0.6,0.8,0.7,0.6,0.6,0.6,0.7], vProfile: [0.9,0.6,0.5,0.5,0.6,0.7,0.7,0.5],
             topLeft: 0.88, topRight: 0.6, bottomLeft: 0.88, bottomRight: 0.88,
             leftBar: 0.9, rightBar: 0.6, topBar: 0.8, bottomBar: 0.6,
             stemStraightness: 0.96, vCrossingsMiddle: 2, hCrossingsMiddle: 2, loops: 1, aspectRatio: 0.78
         };
 
         fallback['T'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.9, 0.9, 0.9, 0.9, 0.9, 0.1, 0.2, 0.8, 0.2, 0.1, 0.1, 0.2, 0.8, 0.2, 0.1, 0.1, 0.2, 0.8, 0.2, 0.1, 0.1, 0.2, 0.8, 0.2, 0.1],
-            hProfile: [0.9, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3], vProfile: [0.3, 0.4, 0.5, 0.9, 0.9, 0.5, 0.4, 0.3],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.9,0.9,0.9,0.9,0.9, 0.1,0.2,0.8,0.2,0.1, 0.1,0.2,0.8,0.2,0.1, 0.1,0.2,0.8,0.2,0.1, 0.1,0.2,0.8,0.2,0.1],
+            hProfile: [0.9,0.3,0.3,0.3,0.3,0.3,0.3,0.3], vProfile: [0.3,0.4,0.5,0.9,0.9,0.5,0.4,0.3],
             topLeft: 0.88, topRight: 0.88, bottomLeft: 0.15, bottomRight: 0.15,
             leftBar: 0.3, rightBar: 0.3, topBar: 0.96, bottomBar: 0.2,
             stemStraightness: 0.96, vCrossingsMiddle: 1, hCrossingsMiddle: 1, loops: 0, aspectRatio: 0.78
         };
 
         fallback['U'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.8, 0.2, 0.1, 0.2, 0.8, 0.8, 0.2, 0.1, 0.2, 0.8, 0.8, 0.2, 0.1, 0.2, 0.8, 0.8, 0.2, 0.1, 0.2, 0.8, 0.3, 0.8, 0.9, 0.8, 0.3],
-            hProfile: [0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.7, 0.8], vProfile: [0.8, 0.7, 0.5, 0.4, 0.4, 0.5, 0.7, 0.8],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.8,0.2,0.1,0.2,0.8, 0.8,0.2,0.1,0.2,0.8, 0.8,0.2,0.1,0.2,0.8, 0.8,0.2,0.1,0.2,0.8, 0.3,0.8,0.9,0.8,0.3],
+            hProfile: [0.6,0.6,0.6,0.6,0.6,0.6,0.7,0.8], vProfile: [0.8,0.7,0.5,0.4,0.4,0.5,0.7,0.8],
             topLeft: 0.85, topRight: 0.85, bottomLeft: 0.7, bottomRight: 0.7,
             leftBar: 0.85, rightBar: 0.85, topBar: 0.4, bottomBar: 0.88,
             stemStraightness: 0.6, vCrossingsMiddle: 2, hCrossingsMiddle: 1, loops: 0, aspectRatio: 0.8
         };
 
         fallback['V'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.8, 0.2, 0.1, 0.2, 0.8, 0.8, 0.2, 0.1, 0.2, 0.8, 0.2, 0.8, 0.1, 0.8, 0.2, 0.1, 0.6, 0.6, 0.6, 0.1, 0.1, 0.2, 0.8, 0.2, 0.1],
-            hProfile: [0.6, 0.6, 0.6, 0.6, 0.5, 0.5, 0.4, 0.4], vProfile: [0.7, 0.6, 0.5, 0.6, 0.6, 0.6, 0.6, 0.7],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.8,0.2,0.1,0.2,0.8, 0.8,0.2,0.1,0.2,0.8, 0.2,0.8,0.1,0.8,0.2, 0.1,0.6,0.6,0.6,0.1, 0.1,0.2,0.8,0.2,0.1],
+            hProfile: [0.6,0.6,0.6,0.6,0.5,0.5,0.4,0.4], vProfile: [0.7,0.6,0.5,0.6,0.6,0.6,0.6,0.7],
             topLeft: 0.85, topRight: 0.85, bottomLeft: 0.2, bottomRight: 0.2,
             leftBar: 0.6, rightBar: 0.6, topBar: 0.6, bottomBar: 0.4,
             stemStraightness: 0.3, vCrossingsMiddle: 2, hCrossingsMiddle: 1, loops: 0, aspectRatio: 0.78
         };
 
         fallback['W'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.8, 0.2, 0.1, 0.2, 0.8, 0.8, 0.2, 0.6, 0.2, 0.8, 0.8, 0.6, 0.8, 0.6, 0.8, 0.8, 0.8, 0.2, 0.8, 0.8, 0.6, 0.6, 0.1, 0.6, 0.6],
-            hProfile: [0.6, 0.6, 0.7, 0.8, 0.8, 0.7, 0.6, 0.6], vProfile: [0.8, 0.7, 0.7, 0.8, 0.8, 0.7, 0.7, 0.8],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.8,0.2,0.1,0.2,0.8, 0.8,0.2,0.6,0.2,0.8, 0.8,0.6,0.8,0.6,0.8, 0.8,0.8,0.2,0.8,0.8, 0.6,0.6,0.1,0.6,0.6],
+            hProfile: [0.6,0.6,0.7,0.8,0.8,0.7,0.6,0.6], vProfile: [0.8,0.7,0.7,0.8,0.8,0.7,0.7,0.8],
             topLeft: 0.85, topRight: 0.85, bottomLeft: 0.8, bottomRight: 0.8,
             leftBar: 0.8, rightBar: 0.8, topBar: 0.5, bottomBar: 0.85,
             stemStraightness: 0.3, vCrossingsMiddle: 3, hCrossingsMiddle: 1, loops: 0, aspectRatio: 0.95
         };
 
         fallback['X'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.8, 0.2, 0.1, 0.2, 0.8, 0.2, 0.8, 0.1, 0.8, 0.2, 0.1, 0.2, 0.9, 0.2, 0.1, 0.2, 0.8, 0.1, 0.8, 0.2, 0.8, 0.2, 0.1, 0.2, 0.8],
-            hProfile: [0.6, 0.6, 0.5, 0.5, 0.5, 0.5, 0.6, 0.6], vProfile: [0.6, 0.6, 0.5, 0.5, 0.5, 0.5, 0.6, 0.6],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.8,0.2,0.1,0.2,0.8, 0.2,0.8,0.1,0.8,0.2, 0.1,0.2,0.9,0.2,0.1, 0.2,0.8,0.1,0.8,0.2, 0.8,0.2,0.1,0.2,0.8],
+            hProfile: [0.6,0.6,0.5,0.5,0.5,0.5,0.6,0.6], vProfile: [0.6,0.6,0.5,0.5,0.5,0.5,0.6,0.6],
             topLeft: 0.85, topRight: 0.85, bottomLeft: 0.85, bottomRight: 0.85,
             leftBar: 0.5, rightBar: 0.5, topBar: 0.6, bottomBar: 0.6,
             stemStraightness: 0.2, vCrossingsMiddle: 2, hCrossingsMiddle: 2, loops: 0, aspectRatio: 0.8
         };
 
         fallback['Y'] = {
-            grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.8, 0.2, 0.1, 0.2, 0.8, 0.2, 0.8, 0.1, 0.8, 0.2, 0.1, 0.2, 0.9, 0.2, 0.1, 0.1, 0.2, 0.8, 0.2, 0.1, 0.1, 0.2, 0.8, 0.2, 0.1],
-            hProfile: [0.6, 0.6, 0.5, 0.4, 0.4, 0.4, 0.4, 0.4], vProfile: [0.6, 0.6, 0.5, 0.7, 0.7, 0.5, 0.6, 0.6],
+            grid7x7: new Array(49).fill(1/7), grid5x5: [0.8,0.2,0.1,0.2,0.8, 0.2,0.8,0.1,0.8,0.2, 0.1,0.2,0.9,0.2,0.1, 0.1,0.2,0.8,0.2,0.1, 0.1,0.2,0.8,0.2,0.1],
+            hProfile: [0.6,0.6,0.5,0.4,0.4,0.4,0.4,0.4], vProfile: [0.6,0.6,0.5,0.7,0.7,0.5,0.6,0.6],
             topLeft: 0.85, topRight: 0.85, bottomLeft: 0.2, bottomRight: 0.2,
             leftBar: 0.5, rightBar: 0.5, topBar: 0.6, bottomBar: 0.4,
             stemStraightness: 0.4, vCrossingsMiddle: 2, hCrossingsMiddle: 2, loops: 0, aspectRatio: 0.78
@@ -1154,7 +1033,7 @@ class MatrixMindApp {
         for (const charCode of this.classes) {
             offCtx.fillStyle = '#000000';
             offCtx.fillRect(0, 0, 120, 120);
-
+            
             offCtx.fillStyle = '#FFFFFF';
             offCtx.font = 'bold 88px Inter, Arial, sans-serif';
             offCtx.textAlign = 'center';
@@ -1164,7 +1043,7 @@ class MatrixMindApp {
             tf.tidy(() => {
                 const imgTensor = tf.browser.fromPixels(offCanvas, 1);
                 const data = imgTensor.dataSync();
-
+                
                 let minX = 120, minY = 120, maxX = 0, maxY = 0;
                 for (let y = 0; y < 120; y++) {
                     for (let x = 0; x < 120; x++) {
@@ -1185,7 +1064,7 @@ class MatrixMindApp {
 
                 const cropped = imgTensor.slice([boxY, boxX, 0], [boxH, boxW, 1]);
                 const resized = tf.image.resizeBilinear(cropped, [28, 28]).div(255.0);
-
+                
                 const features = this.extractFeatures(resized, w / Math.max(1, h));
                 prototypes[charCode] = features;
             });
@@ -1280,17 +1159,16 @@ class MatrixMindApp {
             const prediction = this.classifyCharacter(features);
             this.lastPrediction = prediction;
 
-            // Comprobar si coincide con alguna acción configurada de domótica
-            const detectedChar = prediction.char;
-            const domAction = this.getDomoticsActionForChar(detectedChar);
+            // Actualizar UI en vivo con los resultados
+            this.predictionChar.textContent = prediction.char;
+            this.predictionChar.classList.add('pulse-anim');
+            this.predictionDetails.textContent = `Carácter detectado por IA`;
+            
+            this.confidenceBar.style.width = `${prediction.confidence}%`;
+            this.confidenceLabel.textContent = `Coincidencia de Trazo`;
 
-            if (domAction) {
-                await this.executeDomoticsAction(domAction.actionKey, true);
-            } else {
-                this.predictionChar.textContent = detectedChar;
-                this.predictionDetails.textContent = `Carácter detectado por IA`;
-                await this.sendToESP32(detectedChar);
-            }
+            // Enviar petición al ESP32
+            await this.sendToESP32(prediction.char);
 
         } catch (err) {
             console.error('Error durante el reconocimiento o envío:', err);
@@ -1342,15 +1220,15 @@ class MatrixMindApp {
             if (target.hCrossingsMiddle !== features.hCrossingsMiddle) crossingPenalization += 0.45;
 
             let distCorners = Math.abs((features.topLeft || 0) - (target.topLeft || 0)) +
-                Math.abs((features.topRight || 0) - (target.topRight || 0)) +
-                Math.abs((features.bottomLeft || 0) - (target.bottomLeft || 0)) +
-                Math.abs((features.bottomRight || 0) - (target.bottomRight || 0));
+                              Math.abs((features.topRight || 0) - (target.topRight || 0)) +
+                              Math.abs((features.bottomLeft || 0) - (target.bottomLeft || 0)) +
+                              Math.abs((features.bottomRight || 0) - (target.bottomRight || 0));
             distCorners /= 4.0;
 
             let distBars = Math.abs((features.leftBar || 0) - (target.leftBar || 0)) +
-                Math.abs((features.rightBar || 0) - (target.rightBar || 0)) +
-                Math.abs((features.topBar || 0) - (target.topBar || 0)) +
-                Math.abs((features.bottomBar || 0) - (target.bottomBar || 0));
+                           Math.abs((features.rightBar || 0) - (target.rightBar || 0)) +
+                           Math.abs((features.topBar || 0) - (target.topBar || 0)) +
+                           Math.abs((features.bottomBar || 0) - (target.bottomBar || 0));
             distBars /= 4.0;
 
             let loopPenalization = Math.abs((features.loops || 0) - (target.loops || 0)) * 1.35;
@@ -1403,15 +1281,15 @@ class MatrixMindApp {
                 if (target.hCrossingsMiddle !== features.hCrossingsMiddle) crossingPenalization += 0.45;
 
                 let distCorners = Math.abs((features.topLeft || 0) - (target.topLeft || 0)) +
-                    Math.abs((features.topRight || 0) - (target.topRight || 0)) +
-                    Math.abs((features.bottomLeft || 0) - (target.bottomLeft || 0)) +
-                    Math.abs((features.bottomRight || 0) - (target.bottomRight || 0));
+                                  Math.abs((features.topRight || 0) - (target.topRight || 0)) +
+                                  Math.abs((features.bottomLeft || 0) - (target.bottomLeft || 0)) +
+                                  Math.abs((features.bottomRight || 0) - (target.bottomRight || 0));
                 distCorners /= 4.0;
 
                 let distBars = Math.abs((features.leftBar || 0) - (target.leftBar || 0)) +
-                    Math.abs((features.rightBar || 0) - (target.rightBar || 0)) +
-                    Math.abs((features.topBar || 0) - (target.topBar || 0)) +
-                    Math.abs((features.bottomBar || 0) - (target.bottomBar || 0));
+                               Math.abs((features.rightBar || 0) - (target.rightBar || 0)) +
+                               Math.abs((features.topBar || 0) - (target.topBar || 0)) +
+                               Math.abs((features.bottomBar || 0) - (target.bottomBar || 0));
                 distBars /= 4.0;
 
                 let loopPenalization = Math.abs((features.loops || 0) - (target.loops || 0)) * 1.35;
@@ -1445,27 +1323,15 @@ class MatrixMindApp {
     /**
      * Enviar petición HTTP POST asíncrona al endpoint del ESP32
      */
-    async sendToESP32(character, extraPayload = {}) {
-        this.lastSentPayload = { character, extraPayload };
-
+    async sendToESP32(character) {
         // Iluminar al instante en la matriz LED virtual en pantalla
-        if (extraPayload.action && this.DOMOTICS_ICONS[extraPayload.action]) {
-            this.renderVirtualMatrixPattern(this.DOMOTICS_ICONS[extraPayload.action]);
-        } else if (character) {
-            this.displayVirtualChar(character);
-        }
+        this.displayVirtualChar(character);
 
         const url = `http://${this.esp32Ip}/api/set-character`;
-        const payload = { character: character || '', ...extraPayload };
+        const payload = { character: character };
 
-        let toastDesc = `Enviando '${character}'`;
-        if (extraPayload.action === 'lamp_on') toastDesc = '💡 Encendiendo Foco Real';
-        else if (extraPayload.action === 'lamp_off') toastDesc = '🌑 Apagando Foco Real';
-        else if (extraPayload.action === 'alarm_on') toastDesc = `🚨 Activando Sirena (${extraPayload.duration || 3}s)`;
-        else if (extraPayload.action === 'alarm_off') toastDesc = '🔕 Silenciando Sirena';
-
-        this.showToast(`🚀 ${toastDesc} al ESP32 (${this.esp32Ip})...`);
-
+        this.showToast(`🚀 Enviando '${character}' al ESP32 (${this.esp32Ip})...`);
+        
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 4000); // 4 seg de timeout
@@ -1485,11 +1351,7 @@ class MatrixMindApp {
                 const data = await response.json().catch(() => ({ status: 'ok' }));
                 console.log('✅ Respuesta del ESP32:', data);
                 this.updateConnectionBadge(true);
-                if (extraPayload.action) {
-                    this.showToast(`✨ ¡Acción domótica ejecutada e icono iluminado en matriz LED!`);
-                } else {
-                    this.showToast(`✨ ¡Carácter '${character}' iluminado en matriz LED!`);
-                }
+                this.showToast(`✨ ¡Carácter '${character}' iluminado en matriz LED!`);
             } else {
                 console.warn(`⚠️ ESP32 respondió con código ${response.status}`);
                 this.updateConnectionBadge(true, `HTTP ${response.status}`);
@@ -1498,11 +1360,7 @@ class MatrixMindApp {
         } catch (err) {
             console.warn('⚠️ No se pudo contactar al ESP32 (¿estás en la misma red Wi-Fi?):', err.message);
             this.updateConnectionBadge(false);
-            if (extraPayload.action) {
-                this.showToast(`📶 Modo Local/Simulado: Icono domótico iluminado en pantalla`);
-            } else {
-                this.showToast(`📶 Modo Local/Simulado: '${character}' iluminado en simulador de pantalla`);
-            }
+            this.showToast(`📶 Modo Local: '${character}' iluminado en matriz LED de pantalla`);
         }
     }
 
@@ -1518,7 +1376,7 @@ class MatrixMindApp {
         }
 
         const speed = parseInt(this.phraseSpeedSelect ? this.phraseSpeedSelect.value : '65', 10);
-
+        
         // Iniciar al instante la animación de marquesina en la matriz LED virtual en pantalla
         this.scrollVirtualPhrase(text, speed);
 
@@ -1569,10 +1427,10 @@ class MatrixMindApp {
                     this.sendPhraseBtn.innerHTML = `<span>🚀</span> Enviar Frase`;
                     return;
                 }
-            } catch (e2) { }
+            } catch (e2) {}
 
             this.updateConnectionBadge(false);
-            this.showToast(`📶 Modo Local/Simulado: Frase "${text}" lista para marquesina (ESP32 sin conexión)`);
+            this.showToast(`📶 Modo Local: Frase "${text}" lista para marquesina (ESP32 sin conexión)`);
         } finally {
             this.sendPhraseBtn.disabled = false;
             this.sendPhraseBtn.innerHTML = `<span>🚀</span> Enviar Frase`;
@@ -1598,7 +1456,7 @@ class MatrixMindApp {
     showToast(msg) {
         this.toastMessage.textContent = msg;
         this.toastNotification.classList.add('show');
-
+        
         if (this.toastTimer) clearTimeout(this.toastTimer);
         this.toastTimer = setTimeout(() => {
             this.toastNotification.classList.remove('show');
@@ -1666,18 +1524,21 @@ class MatrixMindApp {
     }
 
     /**
-     * Exportar todas las plantillas personalizadas y configuración de domótica a un archivo JSON descargable
+     * Exportar todas las plantillas personalizadas a un archivo JSON descargable
      */
     exportAIProfile() {
         const sampleCount = Object.values(this.customTemplates).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
-        
+        if (sampleCount === 0) {
+            alert('⚠️ No tienes ninguna muestra personalizada aprendida para exportar. ¡Enseñale algunas letras a la IA primero!');
+            return;
+        }
+
         const profileData = {
-            appName: 'STA Sistema Táctil Asistencial Profile',
-            version: 'v7.0',
+            appName: 'MatrixMind AI Handwriting Profile',
+            version: 'v6.5',
             exportDate: new Date().toISOString(),
             totalSamples: sampleCount,
-            templates: this.customTemplates,
-            domoticsConfig: this.domoticsConfig
+            templates: this.customTemplates
         };
 
         const jsonString = JSON.stringify(profileData, null, 2);
@@ -1687,17 +1548,17 @@ class MatrixMindApp {
         const a = document.createElement('a');
         a.href = url;
         const dateStr = new Date().toISOString().slice(0, 10);
-        a.download = `sta_perfil_${dateStr}.json`;
+        a.download = `matrixmind_ai_profile_${dateStr}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        this.showToast(`📤 ¡Perfil IA con ${sampleCount} muestras y domótica exportado exitosamente!`);
+        this.showToast(`📤 ¡Perfil IA con ${sampleCount} muestras exportado exitosamente!`);
     }
 
     /**
-     * Importar y fusionar archivo JSON de perfil de IA y domótica al almacenamiento local
+     * Importar y fusionar archivo JSON de perfil de IA al almacenamiento local
      */
     async importAIProfile(event) {
         const file = event.target.files[0];
@@ -1730,7 +1591,7 @@ class MatrixMindApp {
                 }
 
                 for (const sample of validSamples) {
-                    const isDup = this.customTemplates[charCode].some(existing =>
+                    const isDup = this.customTemplates[charCode].some(existing => 
                         existing.grid5x5 && existing.grid5x5.every((val, i) => Math.abs(val - sample.grid5x5[i]) < 0.001)
                     );
                     if (!isDup) {
@@ -1744,21 +1605,11 @@ class MatrixMindApp {
                 }
             }
 
-            // Si el archivo incluye configuración de domótica, importarla también
-            if (data.domoticsConfig && typeof data.domoticsConfig === 'object') {
-                this.domoticsConfig = {
-                    ...this.domoticsConfig,
-                    ...data.domoticsConfig
-                };
-                localStorage.setItem('matrixmind_domotics_config', JSON.stringify(this.domoticsConfig));
-                this.syncDomoticsUI();
-            }
-
             localStorage.setItem('matrixmind_custom_templates', JSON.stringify(this.customTemplates));
             this.updateCustomTemplatesStatus();
             event.target.value = '';
 
-            alert(`✅ ¡Perfil IA importado correctamente!\nSe añadieron ${addedSamples} nuevas muestras al sistema.`);
+            alert(`✅ ¡Perfil IA importado correctamente!\nSe añadieron ${addedSamples} nuevas muestras en el sistema.`);
             this.showToast(`📥 ${addedSamples} muestras importadas exitosamente.`);
 
         } catch (err) {
@@ -1769,67 +1620,56 @@ class MatrixMindApp {
     }
 
     /**
-     * Gestión de Navegación por Pestañas (Tabs)
-     */
-    switchTab(targetPaneId) {
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            if (btn.getAttribute('data-tab') === targetPaneId) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
-        });
-
-        document.querySelectorAll('.tab-pane').forEach(pane => {
-            if (pane.id === targetPaneId) {
-                pane.classList.add('active');
-            } else {
-                pane.classList.remove('active');
-            }
-        });
-    }
-
-    /**
-     * Gestión de Ajustes del Sistema ESP32
+     * Gestión del Modal de Configuración
      */
     loadSettings() {
-        if (this.esp32IpInput) this.esp32IpInput.value = this.esp32Ip;
-        if (this.endpointPreview) this.endpointPreview.textContent = `http://${this.esp32Ip}/api/set-character`;
-        if (this.autoSendToggle) this.autoSendToggle.checked = this.autoSend;
+        this.esp32IpInput.value = this.esp32Ip;
+        this.endpointPreview.textContent = `http://${this.esp32Ip}/api/set-character`;
+        this.autoSendToggle.checked = this.autoSend;
         this.updateCustomTemplatesStatus();
     }
 
+    openModal() {
+        this.loadSettings();
+        this.settingsModal.classList.add('active');
+    }
+
+    closeModal() {
+        this.settingsModal.classList.remove('active');
+    }
+
     saveSettings() {
-        const ip = (this.esp32IpInput ? this.esp32IpInput.value.trim() : '') || '192.168.0.137';
+        const ip = this.esp32IpInput.value.trim() || '192.168.0.137';
         this.esp32Ip = ip;
-        this.autoSend = this.autoSendToggle ? this.autoSendToggle.checked : false;
+        this.autoSend = this.autoSendToggle.checked;
 
         localStorage.setItem('matrixmind_esp32_ip', this.esp32Ip);
         localStorage.setItem('matrixmind_autosend', this.autoSend);
 
-        if (this.endpointPreview) this.endpointPreview.textContent = `http://${this.esp32Ip}/api/set-character`;
+        this.endpointPreview.textContent = `http://${this.esp32Ip}/api/set-character`;
+        this.closeModal();
         this.showToast(`⚙️ Configuración del ESP32 guardada: ${this.esp32Ip}`);
     }
 
     async testESP32Connection() {
-        const ip = (this.esp32IpInput ? this.esp32IpInput.value.trim() : '') || '192.168.0.137';
-        if (this.testConnectionBtn) this.testConnectionBtn.textContent = 'Probando...';
-
+        const ip = this.esp32IpInput.value.trim();
+        this.testConnectionBtn.textContent = 'Probando...';
+        
         try {
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), 3000);
-
-            // Enviamos un ping visual con la letra 'A' de prueba
+            
+            // Enviamos un ping visual con la letra 'B' de prueba
             const res = await fetch(`http://${ip}/api/set-character`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ character: 'A' }),
+                body: JSON.stringify({ character: 'B' }),
                 signal: controller.signal
             });
             clearTimeout(id);
 
             if (res.ok) {
-                alert(`✅ Conexión exitosa con el ESP32 en ${ip} y matriz LED probada con la letra 'A'.`);
+                alert(`✅ Conexión exitosa con el ESP32 en ${ip} y matriz LED probada con la letra 'B'.`);
                 this.updateConnectionBadge(true);
             } else {
                 alert(`⚠️ El ESP32 respondió con código HTTP ${res.status}.`);
@@ -1837,260 +1677,7 @@ class MatrixMindApp {
         } catch (err) {
             alert(`⚠️ No se pudo conectar a http://${ip}/api/set-character. Verifica que el ESP32 esté encendido y conectado a tu red Wi-Fi.`);
         } finally {
-            if (this.testConnectionBtn) this.testConnectionBtn.textContent = 'Probar Conexión';
-        }
-    }
-
-    /**
-     * =========================================================================
-     * DOMÓTICA INTELIGENTE CONFIGURABLE (FOCO, ALARMA, TIEMPOS, GESTOS)
-     * =========================================================================
-     */
-
-    loadDomoticsConfig() {
-        const defaultConfig = {
-            alarmOn: { duration: 3 }
-        };
-
-        try {
-            const saved = localStorage.getItem('matrixmind_domotics_config');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                return {
-                    alarmOn: { duration: parseInt(parsed.alarmOn?.duration || '3', 10) }
-                };
-            }
-        } catch (e) {
-            console.warn('⚠️ Error al cargar domotics config:', e);
-        }
-        return defaultConfig;
-    }
-
-    syncDomoticsUI() {
-        // Duración configurada de la sirena
-        const aDur = document.getElementById('alarmDurationSelect');
-        const durBadge = document.getElementById('durationBadgeText');
-        if (aDur) aDur.value = String(this.domoticsConfig?.alarmOn?.duration || 3);
-        if (durBadge) durBadge.textContent = `${this.domoticsConfig?.alarmOn?.duration || 3} Segundos`;
-
-        // Contadores de muestras aprendidas por cada símbolo libre domótico
-        const sLOn = document.getElementById('lampOnSampleCount');
-        const sLOff = document.getElementById('lampOffSampleCount');
-        const sAOn = document.getElementById('alarmOnSampleCount');
-        const sAOff = document.getElementById('alarmOffSampleCount');
-
-        const getSampleCount = (domKey, legacyChar) => {
-            return (this.customTemplates[domKey]?.length || 0) + (this.customTemplates[legacyChar]?.length || 0);
-        };
-
-        if (sLOn) sLOn.textContent = `${getSampleCount('DOM_LAMP_ON', 'L')} muestras`;
-        if (sLOff) sLOff.textContent = `${getSampleCount('DOM_LAMP_OFF', 'O')} muestras`;
-        if (sAOn) sAOn.textContent = `${getSampleCount('DOM_ALARM_ON', 'A')} muestras`;
-        if (sAOff) sAOff.textContent = `${getSampleCount('DOM_ALARM_OFF', 'X')} muestras`;
-    }
-
-    saveDomoticsConfig() {
-        const duration = parseInt(document.getElementById('alarmDurationSelect')?.value || '3', 10);
-        this.domoticsConfig = {
-            alarmOn: { duration: duration }
-        };
-
-        localStorage.setItem('matrixmind_domotics_config', JSON.stringify(this.domoticsConfig));
-        this.syncDomoticsUI();
-        this.showToast(`💾 ¡Configuración de Domótica guardada exitosamente!`);
-    }
-
-    /**
-     * Enseñar a la IA el trazo actual dibujado en el lienzo para una acción domótica específica
-     */
-    async trainDomoticsAction(actionKey) {
-        let targetKey = 'DOM_LAMP_ON';
-        let actionLabel = 'Encender Foco';
-        let iconEmoji = '💡';
-
-        if (actionKey === 'lamp_on') {
-            targetKey = 'DOM_LAMP_ON';
-            actionLabel = 'Encender Foco';
-            iconEmoji = '💡';
-        } else if (actionKey === 'lamp_off') {
-            targetKey = 'DOM_LAMP_OFF';
-            actionLabel = 'Apagar Foco';
-            iconEmoji = '🌑';
-        } else if (actionKey === 'alarm_on') {
-            targetKey = 'DOM_ALARM_ON';
-            actionLabel = 'Activar Alarma';
-            iconEmoji = '🔔';
-        } else if (actionKey === 'alarm_off') {
-            targetKey = 'DOM_ALARM_OFF';
-            actionLabel = 'Silenciar Alarma';
-            iconEmoji = '🔕';
-        }
-
-        // Si aún no se han extraído características del trazo dibujado
-        let features = this.lastPrediction?.features;
-        if (!features && this.hasDrawn) {
-            try {
-                if (typeof tf !== 'undefined') await tf.ready();
-                const tensor = this.preprocessCanvas();
-                if (tensor) {
-                    features = this.extractFeatures(tensor);
-                    tensor.dispose();
-                }
-            } catch (e) {}
-        }
-
-        if (!features) {
-            alert('⚠️ Dibuja primero cualquier símbolo o trazo en el lienzo antes de presionar este botón.');
-            this.switchTab('pane-canvas');
-            return;
-        }
-
-        if (!this.customTemplates[targetKey] || !Array.isArray(this.customTemplates[targetKey])) {
-            this.customTemplates[targetKey] = [];
-        }
-        this.customTemplates[targetKey].push(features);
-        if (this.customTemplates[targetKey].length > 12) {
-            this.customTemplates[targetKey].shift();
-        }
-        localStorage.setItem('matrixmind_custom_templates', JSON.stringify(this.customTemplates));
-
-        const count = this.customTemplates[targetKey].length;
-        this.syncDomoticsUI();
-        this.updateCustomTemplatesStatus();
-        this.showToast(`🧠 ¡IA aprendió la muestra #${count} para ${iconEmoji} ${actionLabel}!`);
-    }
-
-    /**
-     * Detectar si un carácter clasificado por la IA corresponde a una acción de domótica
-     */
-    getDomoticsActionForChar(char) {
-        if (!char) return null;
-        const upper = char.toUpperCase();
-
-        if (upper === 'DOM_LAMP_ON' || upper === 'L') {
-            return { actionKey: 'lamp_on', detailLabel: '💡 Domótica: Encendiendo Foco Real (Icono Foco)' };
-        }
-        if (upper === 'DOM_LAMP_OFF' || upper === 'O') {
-            return { actionKey: 'lamp_off', detailLabel: '🌑 Domótica: Apagando Foco Real (Icono Foco Apagado)' };
-        }
-        if (upper === 'DOM_ALARM_ON' || upper === 'A') {
-            const selEl = document.getElementById('alarmDurationSelect');
-            const dur = selEl ? (parseInt(selEl.value, 10) || 3) : (this.domoticsConfig?.alarmOn?.duration || 3);
-            return { actionKey: 'alarm_on', detailLabel: `🚨 Domótica: Activando Alarma (${dur}s)` };
-        }
-        if (upper === 'DOM_ALARM_OFF' || upper === 'X') {
-            return { actionKey: 'alarm_off', detailLabel: '🔕 Domótica: Silenciando Alarma' };
-        }
-        return null;
-    }
-
-    /**
-     * Ejecutar acción domótica con actualización de estado visual y transmisión al ESP32
-     */
-    async executeDomoticsAction(actionKey, sendToServer = true) {
-        let actionPayload = {};
-        let iconEmoji = '💡';
-        let detailText = 'Foco Encendido';
-
-        if (actionKey === 'lamp_on') {
-            actionPayload = { action: 'lamp_on' };
-            iconEmoji = '💡';
-            detailText = 'Foco Encendido (Relé Conmutado)';
-            this.domoticsState.lamp = true;
-            this.updateDomoticsVisualState();
-            this.renderVirtualMatrixPattern(this.DOMOTICS_ICONS.lamp_on);
-            this.showToast(`💡 Foco Encendido`);
-        } else if (actionKey === 'lamp_off') {
-            actionPayload = { action: 'lamp_off' };
-            iconEmoji = '🌑';
-            detailText = 'Foco Apagado (Relé Abierto)';
-            this.domoticsState.lamp = false;
-            this.updateDomoticsVisualState();
-            this.renderVirtualMatrixPattern(this.DOMOTICS_ICONS.lamp_off);
-            this.showToast(`🌑 Foco Apagado`);
-        } else if (actionKey === 'alarm_on') {
-            const selEl = document.getElementById('alarmDurationSelect');
-            const dur = selEl ? (parseInt(selEl.value, 10) || 3) : (this.domoticsConfig?.alarmOn?.duration || 3);
-            if (!this.domoticsConfig.alarmOn) this.domoticsConfig.alarmOn = {};
-            this.domoticsConfig.alarmOn.duration = dur;
-            actionPayload = { action: 'alarm_on', duration: dur };
-            iconEmoji = '🔔';
-            detailText = `Sirena Activada (${dur} seg)`;
-            this.domoticsState.alarm = true;
-            this.updateDomoticsVisualState();
-            this.showToast(`🚨 Alarma Activada (${dur} segundos de sirena)`);
-
-            // Animación sincronizada de sirena pulsante cada 250ms
-            if (this.alarmAnimInterval) clearInterval(this.alarmAnimInterval);
-            let frameToggle = false;
-            this.renderVirtualMatrixPattern(this.DOMOTICS_ICONS.alarm_on_1);
-            this.alarmAnimInterval = setInterval(() => {
-                frameToggle = !frameToggle;
-                this.renderVirtualMatrixPattern(frameToggle ? this.DOMOTICS_ICONS.alarm_on_2 : this.DOMOTICS_ICONS.alarm_on_1);
-            }, 250);
-
-            if (this.alarmTimeout) clearTimeout(this.alarmTimeout);
-            this.alarmTimeout = setTimeout(() => {
-                this.domoticsState.alarm = false;
-                if (this.alarmAnimInterval) {
-                    clearInterval(this.alarmAnimInterval);
-                    this.alarmAnimInterval = null;
-                }
-                this.renderVirtualMatrixPattern(this.DOMOTICS_ICONS.alarm_off);
-                this.updateDomoticsVisualState();
-            }, dur * 1000);
-        } else if (actionKey === 'alarm_off') {
-            actionPayload = { action: 'alarm_off' };
-            iconEmoji = '🔕';
-            detailText = 'Alarma Silenciada';
-            this.domoticsState.alarm = false;
-            if (this.alarmTimeout) clearTimeout(this.alarmTimeout);
-            if (this.alarmAnimInterval) {
-                clearInterval(this.alarmAnimInterval);
-                this.alarmAnimInterval = null;
-            }
-            this.renderVirtualMatrixPattern(this.DOMOTICS_ICONS.alarm_off);
-            this.updateDomoticsVisualState();
-            this.showToast(`🔕 Alarma Silenciada`);
-        }
-
-        this.predictionChar.textContent = iconEmoji;
-        this.predictionDetails.textContent = detailText;
-        this.confidenceBar.style.width = '100%';
-        this.confidenceLabel.textContent = 'Acción Domótica Activada';
-
-        if (sendToServer) {
-            await this.sendToESP32('', actionPayload);
-        }
-    }
-
-    updateDomoticsVisualState() {
-        const lampPill = document.getElementById('lampLiveStatePill');
-        const lampText = document.getElementById('lampLiveStateText');
-        const lampIcon = document.getElementById('lampIconIndicator');
-
-        if (this.domoticsState.lamp) {
-            if (lampPill) { lampPill.className = 'device-state-pill state-on'; }
-            if (lampText) { lampText.textContent = 'Foco Encendido'; }
-            if (lampIcon) { lampIcon.classList.add('is-active'); }
-        } else {
-            if (lampPill) { lampPill.className = 'device-state-pill state-off'; }
-            if (lampText) { lampText.textContent = 'Foco Apagado'; }
-            if (lampIcon) { lampIcon.classList.remove('is-active'); }
-        }
-
-        const alarmPill = document.getElementById('alarmLiveStatePill');
-        const alarmText = document.getElementById('alarmLiveStateText');
-        const alarmIcon = document.getElementById('alarmIconIndicator');
-
-        if (this.domoticsState.alarm) {
-            if (alarmPill) { alarmPill.className = 'device-state-pill state-alert'; }
-            if (alarmText) { alarmText.textContent = 'Sirena Sonando'; }
-            if (alarmIcon) { alarmIcon.classList.add('is-active'); }
-        } else {
-            if (alarmPill) { alarmPill.className = 'device-state-pill state-off'; }
-            if (alarmText) { alarmText.textContent = 'Alarma Silenciada'; }
-            if (alarmIcon) { alarmIcon.classList.remove('is-active'); }
+            this.testConnectionBtn.textContent = 'Probar';
         }
     }
 }
