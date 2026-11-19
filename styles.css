@@ -682,32 +682,11 @@ body {
     gap: 10px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
     z-index: 1000;
-    transition: transform var(--transition-smooth), border-color var(--transition-fast), background-color var(--transition-fast);
+    transition: transform var(--transition-smooth);
 }
 
 .toast-notification.show {
     transform: translateX(-50%) translateY(0);
-}
-
-.toast-notification.toast-warning {
-    background: rgba(45, 22, 16, 0.96);
-    border-color: rgba(251, 146, 60, 0.55);
-    color: #fed7aa;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(251, 146, 60, 0.25);
-}
-
-.toast-notification.toast-error {
-    background: rgba(45, 16, 20, 0.96);
-    border-color: rgba(239, 68, 68, 0.55);
-    color: #fecaca;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(239, 68, 68, 0.25);
-}
-
-.toast-notification.toast-success {
-    background: rgba(14, 38, 30, 0.96);
-    border-color: rgba(16, 185, 129, 0.5);
-    color: #d1fae5;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(16, 185, 129, 0.2);
 }
 
 .toast-icon {
@@ -813,7 +792,6 @@ body {
 .input-with-action input,
 .train-input {
     flex: 1;
-    min-width: 0;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border-glass);
     border-radius: var(--radius-sm);
@@ -2132,178 +2110,8 @@ select:focus {
     color: #e2e8f0;
 }
 
-/* ================= Responsive Adjustments & Mobile UX ================= */
-@media (max-width: 560px) {
-    body {
-        padding: 8px;
-    }
-
-    .app-container {
-        padding-bottom: 24px;
-    }
-
-    /* 1. Top Navigation Bar: compact & wrap-safe */
-    .top-nav {
-        padding: 10px 12px;
-        gap: 8px;
-        margin-bottom: 14px;
-        border-radius: 18px;
-    }
-
-    .brand {
-        gap: 8px;
-        min-width: 0;
-        flex: 1;
-    }
-
-    .brand-icon-wrapper {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-    }
-
-    .brand-tactile-icon {
-        width: 22px;
-        height: 22px;
-    }
-
-    .brand-text-block {
-        min-width: 0;
-    }
-
-    .brand-title-row {
-        gap: 6px;
-        flex-wrap: wrap;
-    }
-
-    .brand-name {
-        font-size: 1.15rem;
-    }
-
-    .version-badge {
-        font-size: 0.58rem;
-        padding: 1px 5px;
-    }
-
-    .brand-subtitle {
-        font-size: 0.62rem;
-        letter-spacing: 0.3px;
-        line-height: 1.15;
-    }
-
-    .nav-controls {
-        gap: 6px;
-        flex-shrink: 0;
-    }
-
-    .status-badge {
-        padding: 4px 8px;
-        gap: 4px;
-    }
-
-    .status-text {
-        font-size: 0.68rem;
-    }
-
-    .settings-btn {
-        width: 34px;
-        height: 34px;
-    }
-
-    /* 2. Tabs Navigation Bar: 3 equal columns, vertical icon + text on mobile */
-    .tabs-nav {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 4px;
-        padding: 5px;
-        margin-bottom: 18px;
-        top: 8px;
-    }
-
-    .tab-btn {
-        flex-direction: column;
-        gap: 3px;
-        padding: 8px 4px;
-        font-size: 0.72rem;
-        min-width: 0;
-        text-align: center;
-    }
-
-    .tab-icon {
-        font-size: 1.1rem;
-        line-height: 1;
-    }
-
-    .tab-label {
-        white-space: normal;
-        line-height: 1.15;
-        display: block;
-        width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .tab-badge {
-        display: none;
-    }
-
-    /* 3. Headers & Titles */
-    .header-section {
-        margin-bottom: 16px;
-        padding: 0 4px;
-    }
-
-    .assistive-badge-header {
-        font-size: 0.62rem;
-        padding: 4px 10px;
-        letter-spacing: 0.5px;
-        max-width: 100%;
-        text-align: center;
-    }
-
-    .main-title {
-        font-size: 1.3rem;
-    }
-
-    .subtitle {
-        font-size: 0.82rem;
-    }
-
-    /* 4. Canvas & Action Buttons */
-    .canvas-wrapper {
-        width: min(320px, calc(100vw - 24px));
-        height: min(320px, calc(100vw - 24px));
-    }
-
-    .button-group {
-        width: min(320px, calc(100vw - 24px));
-        gap: 8px;
-    }
-
-    .button-group .btn {
-        padding: 12px 10px;
-        font-size: 0.84rem;
-    }
-
-    /* 5. Prediction Card */
-    .prediction-section {
-        padding: 18px 16px;
-    }
-
-    .prediction-header-bar {
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-
-    .prediction-char {
-        font-size: 4rem;
-    }
-
-    /* 6. Phrase Sender Section */
-    .phrase-sender-section {
-        padding: 16px;
-    }
-
+/* ================= Responsive Adjustments ================= */
+@media (max-width: 520px) {
     .phrase-header {
         flex-direction: column;
         gap: 10px;
@@ -2319,10 +2127,6 @@ select:focus {
         gap: 10px;
     }
 
-    .phrase-input-wrapper {
-        width: 100%;
-    }
-
     #phraseInput {
         width: 100%;
     }
@@ -2333,135 +2137,10 @@ select:focus {
         padding: 13px;
     }
 
-    /* 7. Virtual LED Matrix Simulator */
-    .virtual-matrix-section {
-        padding: 16px;
-    }
-
-    .matrix-chassis {
-        width: min(300px, 100%);
-        padding: 14px 10px 12px 10px;
-    }
-
     #virtualLedGrid {
-        width: min(250px, calc(100vw - 80px));
-        height: min(250px, calc(100vw - 80px));
+        width: 250px;
+        height: 250px;
         gap: 5px;
-        padding: 10px;
-    }
-
-    /* 8. Domotics Cards & Controls */
-    .domotics-device-card,
-    .settings-card {
-        padding: 16px 14px;
-    }
-
-    .device-card-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-
-    .device-state-pill {
-        align-self: flex-start;
-    }
-
-    .action-box-header {
-        flex-wrap: wrap;
-        gap: 6px;
-    }
-
-    .btn-train-action {
-        font-size: 0.8rem;
-        padding: 10px;
-        text-align: center;
-        line-height: 1.25;
-    }
-
-    .duration-header {
-        flex-wrap: wrap;
-        gap: 6px;
-    }
-
-    /* 9. Settings & Forms (Fix overflow of inputs & endpoint preview) */
-    .input-with-action {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .input-with-action input {
-        width: 100%;
-        min-width: 0;
-    }
-
-    .input-with-action .btn-test {
-        width: 100%;
-        padding: 11px 16px;
-        text-align: center;
-    }
-
-    .helper-text {
-        display: block;
-        word-break: break-all;
-        overflow-wrap: anywhere;
-        line-height: 1.4;
-    }
-
-    .quick-train-row {
-        display: flex;
-        gap: 8px;
-        width: 100%;
-    }
-
-    .quick-train-row .btn-train {
-        flex: 1;
-        padding: 10px 12px;
-    }
-
-    .backup-buttons-row {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .btn-export,
-    .btn-import {
-        width: 100%;
-        min-width: 0;
-    }
-
-    .specs-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .spec-value {
-        word-break: break-word;
-        font-size: 0.78rem;
-    }
-
-    .toast-notification {
-        width: calc(100vw - 32px);
-        max-width: 360px;
-        justify-content: center;
-        text-align: center;
-        bottom: 16px;
-    }
-}
-
-@media (max-width: 360px) {
-    .brand-subtitle {
-        display: none;
-    }
-
-    .tab-btn {
-        font-size: 0.68rem;
-        padding: 7px 2px;
-    }
-
-    .button-group {
-        flex-direction: column;
-    }
-
-    .button-group .btn {
-        width: 100%;
+        padding: 12px;
     }
 }
