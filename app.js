@@ -4,10 +4,10 @@
  * ============================================================================
  * 
  * Funcionalidades clave:
- * 1. Gesti√≥n de Lienzo (Canvas) multit√°ctil y mouse con normalizaci√≥n de trazo.
- * 2. Motor de IA H√≠brido con TensorFlow.js (Preprocesamiento 28x28 + Proyecciones Topol√≥gicas + Plantillas + Aprendizaje en Navegador).
- * 3. Comunicaci√≥n HTTP POST as√≠ncrona hacia el ESP32 (/api/set-character).
- * 4. Interfaz interactiva para ense√±ar y ajustar caracteres en tiempo real.
+ * 1. GestiÛn de Lienzo (Canvas) multit·ctil y mouse con normalizaciÛn de trazo.
+ * 2. Motor de IA HÌbrido con TensorFlow.js (Preprocesamiento 28x28 + Proyecciones TopolÛgicas + Plantillas + Aprendizaje en Navegador).
+ * 3. ComunicaciÛn HTTP POST asÌncrona hacia el ESP32 (/api/set-character).
+ * 4. Interfaz interactiva para enseÒar y ajustar caracteres en tiempo real.
  */
 
 class MatrixMindApp {
@@ -31,7 +31,7 @@ class MatrixMindApp {
         this.toastIcon = document.getElementById('toastIcon');
         this.toastMessage = document.getElementById('toastMessage');
 
-        // Pesta√±as (Tabs) y Ajustes
+        // PestaÒas (Tabs) y Ajustes
         this.openSettingsBtn = document.getElementById('openSettingsBtn');
         this.esp32IpInput = document.getElementById('esp32IpInput');
         this.endpointPreview = document.getElementById('endpointPreview');
@@ -39,7 +39,7 @@ class MatrixMindApp {
         this.saveSettingsBtn = document.getElementById('saveSettingsBtn');
         this.autoSendToggle = document.getElementById('autoSendToggle');
 
-        // Configuraci√≥n y Estado de Dom√≥tica Inteligente
+        // ConfiguraciÛn y Estado de DomÛtica Inteligente
         this.domoticsConfig = this.loadDomoticsConfig();
         this.domoticsState = {
             lamp: false,
@@ -48,7 +48,7 @@ class MatrixMindApp {
         this.alarmTimeout = null;
         this.alarmAnimInterval = null;
 
-        // Aprendizaje r√°pido
+        // Aprendizaje r·pido
         this.correctCharInput = document.getElementById('correctCharInput');
         this.trainBtn = document.getElementById('trainBtn');
         this.clearTemplatesBtn = document.getElementById('clearTemplatesBtn');
@@ -65,14 +65,14 @@ class MatrixMindApp {
         this.virtualDots = [];
         this.virtualScrollInterval = null;
 
-        // Iconos gr√°ficos de Dom√≥tica 8x8 (Muestran dibujos espec√≠ficos en vez de letras)
+        // Iconos gr·ficos de DomÛtica 8x8 (Muestran dibujos especÌficos en vez de letras)
         this.DOMOTICS_ICONS = {
-            lamp_on:    [0x18, 0x42, 0x3C, 0xA5, 0x24, 0x18, 0x3C, 0x18], // Foco Encendido con destellos radiales y bombilla id√©ntica a la referencia f√≠sica
+            lamp_on:    [0x18, 0x42, 0x3C, 0xA5, 0x24, 0x18, 0x3C, 0x18], // Foco Encendido con destellos radiales y bombilla idÈntica a la referencia fÌsica
             lamp_off:   [0x00, 0x00, 0x3C, 0x24, 0x24, 0x18, 0x3C, 0x18], // Foco Apagado (mismo cuerpo de bombilla sin destellos luminosos)
-            alarm_on:   [0x18, 0x5A, 0xBD, 0xBD, 0x7E, 0xFF, 0x18, 0x24], // Sirena Sonando Frame 1 con ondas ac√∫sticas vibrando
+            alarm_on:   [0x18, 0x5A, 0xBD, 0xBD, 0x7E, 0xFF, 0x18, 0x24], // Sirena Sonando Frame 1 con ondas ac˙sticas vibrando
             alarm_on_1: [0x18, 0x5A, 0xBD, 0xBD, 0x7E, 0xFF, 0x18, 0x24], // Sirena Sonando Frame 1
-            alarm_on_2: [0x18, 0x99, 0x7E, 0x7E, 0xFF, 0x7E, 0x18, 0x18], // Sirena Sonando Frame 2 (pulsaci√≥n alternada)
-            alarm_off:  [0x18, 0x3C, 0x3C, 0x3C, 0x7E, 0xFF, 0x18, 0x00]  // Campana en reposo / silenciada (forma cl√°sica, limpia y representativa)
+            alarm_on_2: [0x18, 0x99, 0x7E, 0x7E, 0xFF, 0x7E, 0x18, 0x18], // Sirena Sonando Frame 2 (pulsaciÛn alternada)
+            alarm_off:  [0x18, 0x3C, 0x3C, 0x3C, 0x7E, 0xFF, 0x18, 0x00]  // Campana en reposo / silenciada (forma cl·sica, limpia y representativa)
         };
 
         this.FONT_MAP_8X8 = {
@@ -100,7 +100,7 @@ class MatrixMindApp {
             'L': [0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x7E, 0x00],
             'M': [0x66, 0x7E, 0x5A, 0x5A, 0x42, 0x42, 0x42, 0x00],
             'N': [0x66, 0x76, 0x7E, 0x7E, 0x6E, 0x66, 0x66, 0x00],
-            '√ë': [0x7E, 0x00, 0x66, 0x76, 0x7E, 0x6E, 0x66, 0x00],
+            '—': [0x7E, 0x00, 0x66, 0x76, 0x7E, 0x6E, 0x66, 0x00],
             'O': [0x3C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x00],
             'P': [0x7C, 0x66, 0x66, 0x7C, 0x60, 0x60, 0x60, 0x00],
             'Q': [0x3C, 0x66, 0x66, 0x66, 0x6A, 0x6C, 0x36, 0x00],
@@ -118,18 +118,17 @@ class MatrixMindApp {
             '.': [0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x18, 0x00]
         };
 
-        // Estado de dibujo y l√≥gica
+        // Estado de dibujo y lÛgica
         this.isDrawing = false;
         this.hasDrawn = false;
         this.debounceTimer = null;
         this.lastPrediction = null;
 
-        // Configuraci√≥n y Memoria de Aprendizaje
+        // ConfiguraciÛn y Memoria de Aprendizaje
         this.esp32Ip = localStorage.getItem('matrixmind_esp32_ip') || '127.0.0.1';
-        this.isEsp32Connected = false;
-        this.autoSend = localStorage.getItem('matrixmind_autosend') === 'true'; // Por defecto desactivado (s√≥lo al presionar bot√≥n)
+        this.autoSend = localStorage.getItem('matrixmind_autosend') === 'true'; // Por defecto desactivado (sÛlo al presionar botÛn)
 
-        // Cargar plantillas personalizadas como arrays m√∫ltiples (Multi-Template Learning) y sanear versiones incompatibles
+        // Cargar plantillas personalizadas como arrays m˙ltiples (Multi-Template Learning) y sanear versiones incompatibles
         try {
             const raw = JSON.parse(localStorage.getItem('matrixmind_custom_templates') || '{}');
             this.customTemplates = {};
@@ -145,7 +144,7 @@ class MatrixMindApp {
                 }
             }
             if (hasIncompatible) {
-                console.warn('üßπ Saneando muestras incompatibles de localStorage...');
+                console.warn('?? Saneando muestras incompatibles de localStorage...');
                 localStorage.setItem('matrixmind_custom_templates', JSON.stringify(this.customTemplates));
             }
         } catch (e) {
@@ -153,11 +152,11 @@ class MatrixMindApp {
             localStorage.removeItem('matrixmind_custom_templates');
         }
 
-        // Mapa alfanum√©rico base (37 clases: 0-9, A-Z, √ë)
+        // Mapa alfanumÈrico base (37 clases: 0-9, A-Z, —)
         this.classes = [
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
-            'K', 'L', 'M', 'N', '√ë', 'O', 'P', 'Q', 'R', 'S',
+            'K', 'L', 'M', 'N', '—', 'O', 'P', 'Q', 'R', 'S',
             'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
         ];
 
@@ -176,11 +175,11 @@ class MatrixMindApp {
         }
         this.initVirtualMatrix();
         this.initAIEngine();
-        console.log('üöÄ STA Sistema T√°ctil Asistencial inicializado correctamente.');
+        console.log('?? STA Sistema T·ctil Asistencial inicializado correctamente.');
     }
 
     /**
-     * Inicializar la cuadr√≠cula 8x8 de LEDs en pantalla para simulaci√≥n visual
+     * Inicializar la cuadrÌcula 8x8 de LEDs en pantalla para simulaciÛn visual
      */
     initVirtualMatrix() {
         if (!this.virtualLedGrid) return;
@@ -197,10 +196,14 @@ class MatrixMindApp {
             }
             this.virtualDots.push(rowDots);
         }
+        // AnimaciÛn inicial en matriz virtual
+        setTimeout(() => {
+            this.displayVirtualChar('A');
+        }, 400);
     }
 
     /**
-     * Renderizar patr√≥n de 8 bytes en los 64 puntos virtuales del DOM
+     * Renderizar patrÛn de 8 bytes en los 64 puntos virtuales del DOM
      */
     renderVirtualMatrixPattern(pattern8bytes) {
         if (!this.virtualDots || this.virtualDots.length !== 8) return;
@@ -218,7 +221,7 @@ class MatrixMindApp {
     }
 
     /**
-     * Iluminar car√°cter instant√°neamente en la matriz virtual en pantalla
+     * Iluminar car·cter instant·neamente en la matriz virtual en pantalla
      */
     displayVirtualChar(char) {
         if (this.virtualScrollInterval) {
@@ -282,7 +285,7 @@ class MatrixMindApp {
     }
 
     /**
-     * Configuraci√≥n del Canvas (Estilo y Lienzo 2D)
+     * ConfiguraciÛn del Canvas (Estilo y Lienzo 2D)
      */
     setupCanvas() {
         // Limpiar en negro puro (fondo de tensor para procesar con IA)
@@ -306,7 +309,7 @@ class MatrixMindApp {
         this.canvas.addEventListener('mouseup', () => this.stopDrawing());
         this.canvas.addEventListener('mouseleave', () => this.stopDrawing());
 
-        // Eventos T√°ctiles (M√≥vil/PWA)
+        // Eventos T·ctiles (MÛvil/PWA)
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             this.startDrawing(e.touches[0]);
@@ -322,11 +325,11 @@ class MatrixMindApp {
             this.stopDrawing();
         }, { passive: false });
 
-        // Botones de acci√≥n principal
+        // Botones de acciÛn principal
         this.clearBtn.addEventListener('click', () => this.clearCanvas());
         this.recognizeBtn.addEventListener('click', () => this.recognizeAndSend());
 
-        // Gesti√≥n de Pesta√±as (Tabs Navigation)
+        // GestiÛn de PestaÒas (Tabs Navigation)
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const targetTab = btn.getAttribute('data-tab');
@@ -346,7 +349,7 @@ class MatrixMindApp {
             });
         }
 
-        // Acciones R√°pidas de Dom√≥tica en Pesta√±a Lienzo
+        // Acciones R·pidas de DomÛtica en PestaÒa Lienzo
         const quickLampOn = document.getElementById('quickLampOnBtn');
         const quickLampOff = document.getElementById('quickLampOffBtn');
         const quickAlarmOn = document.getElementById('quickAlarmOnBtn');
@@ -357,7 +360,7 @@ class MatrixMindApp {
         if (quickAlarmOn) quickAlarmOn.addEventListener('click', () => this.executeDomoticsAction('alarm_on'));
         if (quickAlarmOff) quickAlarmOff.addEventListener('click', () => this.executeDomoticsAction('alarm_off'));
 
-        // Botones de Prueba en Tarjetas de Dom√≥tica
+        // Botones de Prueba en Tarjetas de DomÛtica
         const testLampOn = document.getElementById('testLampOnBtn');
         const testLampOff = document.getElementById('testLampOffBtn');
         const testAlarmOn = document.getElementById('testAlarmOnBtn');
@@ -368,7 +371,7 @@ class MatrixMindApp {
         if (testAlarmOn) testAlarmOn.addEventListener('click', () => this.executeDomoticsAction('alarm_on'));
         if (testAlarmOff) testAlarmOff.addEventListener('click', () => this.executeDomoticsAction('alarm_off'));
 
-        // Botones para Ense√±ar Trazo Dibujado en Lienzo a la Dom√≥tica
+        // Botones para EnseÒar Trazo Dibujado en Lienzo a la DomÛtica
         const trainLampOn = document.getElementById('trainLampOnBtn');
         const trainLampOff = document.getElementById('trainLampOffBtn');
         const trainAlarmOn = document.getElementById('trainAlarmOnBtn');
@@ -379,43 +382,35 @@ class MatrixMindApp {
         if (trainAlarmOn) trainAlarmOn.addEventListener('click', () => this.trainDomoticsAction('alarm_on'));
         if (trainAlarmOff) trainAlarmOff.addEventListener('click', () => this.trainDomoticsAction('alarm_off'));
 
-        // Guardar Cambios de Dom√≥tica
+        // Guardar Cambios de DomÛtica
         const saveDomotics = document.getElementById('saveDomoticsBtn');
         if (saveDomotics) saveDomotics.addEventListener('click', () => this.saveDomoticsConfig());
 
         const alarmDurationSelect = document.getElementById('alarmDurationSelect');
         if (alarmDurationSelect) {
             alarmDurationSelect.addEventListener('change', () => {
-                if (!this.isEsp32Connected) {
-                    alarmDurationSelect.value = String(this.domoticsConfig?.alarmOn?.duration || 3);
-                    this.showToast('Sin conexi√≥n al ESP32: Configura primero la direcci√≥n IP en Sistema & Red para usar Dom√≥tica & Alertas.', 'warning', '‚ö†Ô∏è');
-                    return;
-                }
                 const val = parseInt(alarmDurationSelect.value, 10) || 3;
                 const badge = document.getElementById('durationBadgeText');
                 if (badge) badge.textContent = `${val} Segundos`;
-                // Guardar y sincronizar duraci√≥n de inmediato en la configuraci√≥n
+                // Guardar y sincronizar duraciÛn de inmediato en la configuraciÛn
                 this.domoticsConfig.alarmOn.duration = val;
                 localStorage.setItem('matrixmind_domotics_config', JSON.stringify(this.domoticsConfig));
-                this.showToast(`Tiempo de alarma ajustado a ${val} segundos`, 'info', '‚è±Ô∏è');
+                this.showToast(`?? Tiempo de alarma ajustado a ${val} segundos`);
             });
         }
 
-        // Configuraci√≥n de Hardware ESP32
+        // ConfiguraciÛn de Hardware ESP32
         if (this.esp32IpInput) {
             this.esp32IpInput.addEventListener('input', () => {
-                const ip = this.esp32IpInput.value.trim() || '192.168.43.152';
+                const ip = this.esp32IpInput.value.trim() || '192.168.1.100';
                 if (this.endpointPreview) this.endpointPreview.textContent = `http://${ip}/api/set-character`;
-                if (ip !== this.esp32Ip) {
-                    this.isEsp32Connected = false;
-                }
             });
         }
 
         if (this.testConnectionBtn) this.testConnectionBtn.addEventListener('click', () => this.testESP32Connection());
         if (this.saveSettingsBtn) this.saveSettingsBtn.addEventListener('click', () => this.saveSettings());
 
-        // Bot√≥n de aprendizaje alfanum√©rico
+        // BotÛn de aprendizaje alfanumÈrico
         if (this.trainBtn) this.trainBtn.addEventListener('click', () => this.trainOnDevice());
         if (this.clearTemplatesBtn) {
             this.clearTemplatesBtn.addEventListener('click', () => this.clearAllCustomTemplates());
@@ -433,7 +428,7 @@ class MatrixMindApp {
             });
         }
 
-        // Bot√≥n para limpiar campo de marquesina
+        // BotÛn para limpiar campo de marquesina
         const clearPhraseInputBtn = document.getElementById('clearPhraseInputBtn');
         if (clearPhraseInputBtn && this.phraseInput) {
             clearPhraseInputBtn.addEventListener('click', () => {
@@ -442,7 +437,7 @@ class MatrixMindApp {
             });
         }
 
-        // Chips de frases r√°pidas asistenciales
+        // Chips de frases r·pidas asistenciales
         document.querySelectorAll('.phrase-chip').forEach(chip => {
             chip.addEventListener('click', () => {
                 const phrase = chip.getAttribute('data-phrase');
@@ -453,7 +448,7 @@ class MatrixMindApp {
             });
         });
 
-        // Bot√≥n para reenviar el √∫ltimo car√°cter reconocido
+        // BotÛn para reenviar el ˙ltimo car·cter reconocido
         const resendCharBtn = document.getElementById('resendCharBtn');
         if (resendCharBtn) {
             resendCharBtn.addEventListener('click', () => {
@@ -464,7 +459,7 @@ class MatrixMindApp {
                     if (char && char !== '-') {
                         this.sendToESP32(char);
                     } else {
-                        this.showToast('‚ö†Ô∏è Dibuja o selecciona primero un s√≠mbolo para reenviar');
+                        this.showToast('?? Dibuja o selecciona primero un sÌmbolo para reenviar');
                     }
                 }
             });
@@ -511,7 +506,7 @@ class MatrixMindApp {
         this.isDrawing = false;
         this.ctx.closePath();
 
-        // Si el env√≠o autom√°tico est√° activo, lanzamos el reconocimiento tras un breve retraso (650ms)
+        // Si el envÌo autom·tico est· activo, lanzamos el reconocimiento tras un breve retraso (650ms)
         if (this.hasDrawn && this.autoSend) {
             this.debounceTimer = setTimeout(() => {
                 this.recognizeAndSend();
@@ -541,7 +536,7 @@ class MatrixMindApp {
             const imgTensor = tf.browser.fromPixels(this.canvas, 1);
             const data = imgTensor.dataSync();
 
-            // 2. Encontrar el Bounding Box del trazo (p√≠xeles blancos > 40)
+            // 2. Encontrar el Bounding Box del trazo (pÌxeles blancos > 40)
             let minX = this.canvas.width, minY = this.canvas.height, maxX = 0, maxY = 0;
             let foundPixel = false;
 
@@ -558,9 +553,9 @@ class MatrixMindApp {
                 }
             }
 
-            if (!foundPixel) return null; // Lienzo vac√≠o
+            if (!foundPixel) return null; // Lienzo vacÌo
 
-            // 3. Calcular proporci√≥n (Aspect Ratio) y a√±adir margen equilibrado para centrar
+            // 3. Calcular proporciÛn (Aspect Ratio) y aÒadir margen equilibrado para centrar
             const width = maxX - minX;
             const height = maxY - minY;
             const maxDim = Math.max(width, height);
@@ -574,7 +569,7 @@ class MatrixMindApp {
             // Guardar aspect ratio real en la instancia antes de redimensionar al cuadrado
             this.currentAspectRatio = width / Math.max(1, height);
 
-            // 4. Recortar la regi√≥n y redimensionar a 28x28 normalizada [0, 1]
+            // 4. Recortar la regiÛn y redimensionar a 28x28 normalizada [0, 1]
             const cropped = imgTensor.slice([boxY, boxX, 0], [boxH, boxW, 1]);
             const resized = tf.image.resizeBilinear(cropped, [28, 28]);
             const normalized = resized.div(255.0);
@@ -584,15 +579,15 @@ class MatrixMindApp {
     }
 
     /**
-     * Extracci√≥n de caracter√≠sticas multiescala y morfol√≥gicas del tensor 28x28
-     * (Grilla 7x7 normalizada, Zonificaci√≥n 5x5, Perfiles H/V, Rectitud de tallo y Cruces estructurales)
+     * ExtracciÛn de caracterÌsticas multiescala y morfolÛgicas del tensor 28x28
+     * (Grilla 7x7 normalizada, ZonificaciÛn 5x5, Perfiles H/V, Rectitud de tallo y Cruces estructurales)
      */
     extractFeatures(tensor28, customAspectRatio = null) {
         return tf.tidy(() => {
             const flat = tensor28.flatten();
             const data = flat.dataSync();
 
-            // 1. Grilla de ultra-alta resoluci√≥n 7x7 (49 celdas) con normalizaci√≥n vectorial (Cosine Similarity)
+            // 1. Grilla de ultra-alta resoluciÛn 7x7 (49 celdas) con normalizaciÛn vectorial (Cosine Similarity)
             const grid7x7 = new Array(49).fill(0);
             for (let y = 0; y < 28; y++) {
                 for (let x = 0; x < 28; x++) {
@@ -607,7 +602,7 @@ class MatrixMindApp {
             norm7 = Math.sqrt(norm7) || 1.0;
             for (let i = 0; i < 49; i++) grid7x7[i] /= norm7;
 
-            // 2. Zonificaci√≥n 5x5 (25 celdas espaciales)
+            // 2. ZonificaciÛn 5x5 (25 celdas espaciales)
             const grid5x5 = new Array(25).fill(0);
             for (let y = 0; y < 28; y++) {
                 for (let x = 0; x < 28; x++) {
@@ -618,7 +613,7 @@ class MatrixMindApp {
                 }
             }
 
-            // 3. Zonificaci√≥n 3x3 (9 celdas para balance global del car√°cter)
+            // 3. ZonificaciÛn 3x3 (9 celdas para balance global del car·cter)
             const grid3x3 = new Array(9).fill(0);
             for (let y = 0; y < 28; y++) {
                 for (let x = 0; x < 28; x++) {
@@ -629,7 +624,7 @@ class MatrixMindApp {
                 }
             }
 
-            // 4. Perfiles de proyecci√≥n Horizontal y Vertical (8 bandas cada uno)
+            // 4. Perfiles de proyecciÛn Horizontal y Vertical (8 bandas cada uno)
             const hProfile = new Array(8).fill(0);
             const vProfile = new Array(8).fill(0);
             for (let y = 0; y < 28; y++) {
@@ -642,7 +637,7 @@ class MatrixMindApp {
                 }
             }
 
-            // 5. Esquinas del car√°cter en bloques 6x6
+            // 5. Esquinas del car·cter en bloques 6x6
             let topLeft = 0, topRight = 0, bottomLeft = 0, bottomRight = 0;
             for (let y = 0; y < 6; y++) {
                 for (let x = 0; x < 6; x++) topLeft += data[y * 28 + x];
@@ -680,8 +675,8 @@ class MatrixMindApp {
             if (leftColXs.length > 0) leftSpineVariance = leftColXs.reduce((a, x) => a + Math.abs(x - avgLeftX), 0) / leftColXs.length;
             const stemStraightness = Math.max(0, Math.min(1.0, 1.0 - (leftSpineVariance / 4.0)));
 
-            // 7. Intersecciones (Crossings) por l√≠nea media vertical (x=14) y horizontal (y=14)
-            // Separa categ√≥ricamente B/E (3 cruces verticales) de 0/D (2 cruces) o 1/I (1 cruce)
+            // 7. Intersecciones (Crossings) por lÌnea media vertical (x=14) y horizontal (y=14)
+            // Separa categÛricamente B/E (3 cruces verticales) de 0/D (2 cruces) o 1/I (1 cruce)
             let vCrossingsMiddle = 0, inStroke = false;
             for (let y = 0; y < 28; y++) {
                 const val = data[y * 28 + 14] > 0.35;
@@ -696,7 +691,7 @@ class MatrixMindApp {
                 else if (!val && inStroke) { inStroke = false; }
             }
 
-            // 8. Conteo de bucles topol√≥gicos y relaci√≥n de aspecto
+            // 8. Conteo de bucles topolÛgicos y relaciÛn de aspecto
             const loops = this.countTopologicalLoops(data);
             const aspect = (customAspectRatio !== null) ? customAspectRatio : (this.currentAspectRatio || 1.0);
 
@@ -731,7 +726,7 @@ class MatrixMindApp {
             }
         };
 
-        // Iniciar en todos los p√≠xeles de fondo de los 4 bordes exteriores
+        // Iniciar en todos los pÌxeles de fondo de los 4 bordes exteriores
         for (let x = 0; x < 28; x++) {
             if (grid[x] === 0 && !visited[x]) { visited[x] = true; queue.push([x, 0]); }
             const bIdx = 27 * 28 + x;
@@ -781,19 +776,19 @@ class MatrixMindApp {
     }
 
     /**
-     * Inicializaci√≥n del motor IA con prototipos inmediatos y actualizaci√≥n en segundo plano
+     * InicializaciÛn del motor IA con prototipos inmediatos y actualizaciÛn en segundo plano
      */
     initAIEngine() {
         // 1. Prototipos maestros de respaldo inmediatos por si TF.js o el canvas tardan en iniciar
         this.basePrototypes = this.getFallbackPrototypes();
 
-        // 2. Generar prototipos din√°micos en segundo plano al estar listo TF.js
+        // 2. Generar prototipos din·micos en segundo plano al estar listo TF.js
         if (typeof tf !== 'undefined') {
             tf.ready().then(() => {
                 try {
                     const dynamic = this.generateDynamicPrototypes();
                     if (dynamic && Object.keys(dynamic).length >= 36) {
-                        // Preservar plantillas maestras e inyectar grillas espaciales 7x7 reales de alta resoluci√≥n
+                        // Preservar plantillas maestras e inyectar grillas espaciales 7x7 reales de alta resoluciÛn
                         const merged = Object.assign({}, dynamic);
                         for (const [k, v] of Object.entries(this.basePrototypes)) {
                             const baseChar = k.split('_')[0];
@@ -809,19 +804,19 @@ class MatrixMindApp {
                             }
                         }
                         this.basePrototypes = merged;
-                        console.log('‚ú® Prototipos din√°micos y variantes expertas de alta precisi√≥n activos con grillas 7x7.');
+                        console.log('? Prototipos din·micos y variantes expertas de alta precisiÛn activos con grillas 7x7.');
                     }
                 } catch (e) {
-                    console.warn('‚ö†Ô∏è No se pudieron generar prototipos din√°micos, manteniendo prototipos maestros integrados:', e);
+                    console.warn('?? No se pudieron generar prototipos din·micos, manteniendo prototipos maestros integrados:', e);
                 }
             }).catch(err => {
-                console.warn('‚ö†Ô∏è TF.js fallback activo:', err);
+                console.warn('?? TF.js fallback activo:', err);
             });
         }
     }
 
     /**
-     * Prototipos maestros pre-computados con pesaje geom√©trico y rectitud de tallo
+     * Prototipos maestros pre-computados con pesaje geomÈtrico y rectitud de tallo
      */
     getFallbackPrototypes() {
         const fallback = {};
@@ -975,7 +970,7 @@ class MatrixMindApp {
             stemStraightness: 0.15, vCrossingsMiddle: 2, hCrossingsMiddle: 2, loops: 0, aspectRatio: 0.80
         };
 
-        fallback['√ë'] = {
+        fallback['—'] = {
             grid7x7: new Array(49).fill(1 / 7), grid5x5: [0.8, 0.9, 0.9, 0.9, 0.8, 0.8, 0.2, 0.1, 0.2, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.2, 0.1, 0.2, 0.8, 0.8, 0.1, 0.1, 0.1, 0.8],
             hProfile: [0.9, 0.3, 0.8, 0.8, 0.6, 0.6, 0.6, 0.6], vProfile: [0.8, 0.7, 0.6, 0.6, 0.6, 0.7, 0.8, 0.4],
             topLeft: 0.85, topRight: 0.85, bottomLeft: 0.85, bottomRight: 0.85,
@@ -1147,7 +1142,7 @@ class MatrixMindApp {
     }
 
     /**
-     * Generar plantillas din√°micas y variantes multiescala de escritura a mano en segundo plano
+     * Generar plantillas din·micas y variantes multiescala de escritura a mano en segundo plano
      */
     generateDynamicPrototypes() {
         const offCanvas = document.createElement('canvas');
@@ -1219,7 +1214,7 @@ class MatrixMindApp {
         addVariant('B', '1LOOP', { stemStraightness: 0.96, vCrossingsMiddle: 3, loops: 1, topLeft: 0.88, bottomLeft: 0.88, leftBar: 0.9 });
         addVariant('G', 'HAND', { stemStraightness: 0.15, vCrossingsMiddle: 2, loops: 0, topLeft: 0.15, bottomLeft: 0.3, bottomRight: 0.75, topBar: 0.65, bottomBar: 0.75 });
         addVariant('G', 'HOOK', { stemStraightness: 0.15, vCrossingsMiddle: 2, loops: 0, topLeft: 0.1, bottomLeft: 0.25, bottomRight: 0.65, rightBar: 0.5 });
-        addVariant('√ë', 'HAND', { loops: 0, topBar: 0.95, vCrossingsMiddle: 3, hProfile: [0.9, 0.3, 0.8, 0.8, 0.6, 0.6, 0.6, 0.6] });
+        addVariant('—', 'HAND', { loops: 0, topBar: 0.95, vCrossingsMiddle: 3, hProfile: [0.9, 0.3, 0.8, 0.8, 0.6, 0.6, 0.6, 0.6] });
         addVariant('5', 'HAND', { stemStraightness: 0.4, vCrossingsMiddle: 3, loops: 0, topBar: 0.88, topLeft: 0.8, topRight: 0.7, bottomLeft: 0.15 });
         addVariant('6', 'LOOP', { stemStraightness: 0.15, vCrossingsMiddle: 2, loops: 1, topLeft: 0.5, topRight: 0.05, bottomLeft: 0.6 });
         addVariant('7', 'HAND', { loops: 0, topBar: 0.95, topLeft: 0.88, topRight: 0.88, bottomLeft: 0.15, bottomRight: 0.15, stemStraightness: 0.8 });
@@ -1261,13 +1256,13 @@ class MatrixMindApp {
      */
     async recognizeAndSend() {
         if (!this.hasDrawn) {
-            this.showToast('‚ö†Ô∏è Dibuja primero una letra o n√∫mero en el lienzo');
+            this.showToast('?? Dibuja primero una letra o n˙mero en el lienzo');
             return;
         }
 
         this.processingOverlay.classList.add('active');
 
-        // Permitir actualizaci√≥n visual de la interfaz (spinner)
+        // Permitir actualizaciÛn visual de la interfaz (spinner)
         await new Promise(resolve => setTimeout(resolve, 50));
 
         try {
@@ -1285,30 +1280,28 @@ class MatrixMindApp {
             const prediction = this.classifyCharacter(features);
             this.lastPrediction = prediction;
 
-            // Comprobar si coincide con alguna acci√≥n configurada de dom√≥tica
+            // Comprobar si coincide con alguna acciÛn configurada de domÛtica
             const detectedChar = prediction.char;
             const domAction = this.getDomoticsActionForChar(detectedChar);
 
             if (domAction) {
                 await this.executeDomoticsAction(domAction.actionKey, true);
             } else {
-                const ok = await this.sendToESP32(detectedChar);
-                if (ok) {
-                    this.predictionChar.textContent = detectedChar;
-                    this.predictionDetails.textContent = `Car√°cter detectado por IA`;
-                }
+                this.predictionChar.textContent = detectedChar;
+                this.predictionDetails.textContent = `Car·cter detectado por IA`;
+                await this.sendToESP32(detectedChar);
             }
 
         } catch (err) {
-            console.error('Error durante el reconocimiento o env√≠o:', err);
-            this.showToast('‚ùå Error en el an√°lisis de IA: ' + err.message);
+            console.error('Error durante el reconocimiento o envÌo:', err);
+            this.showToast('? Error en el an·lisis de IA: ' + err.message);
         } finally {
             this.processingOverlay.classList.remove('active');
         }
     }
 
     /**
-     * Clasificaci√≥n hiper-precisa: Similitud Coseno 7x7 + Rectitud Tallo + Cruces L√≠nea Media + Esquinas + Barras
+     * ClasificaciÛn hiper-precisa: Similitud Coseno 7x7 + Rectitud Tallo + Cruces LÌnea Media + Esquinas + Barras
      */
     classifyCharacter(features) {
         let bestChar = 'A';
@@ -1374,7 +1367,7 @@ class MatrixMindApp {
             }
         }
 
-        // --- Comparaci√≥n Vectorial con Todas las Muestras Personalizadas Aprendidas por Usuario (k-Prototype Multi-Sample) ---
+        // --- ComparaciÛn Vectorial con Todas las Muestras Personalizadas Aprendidas por Usuario (k-Prototype Multi-Sample) ---
         for (const [charCode, samples] of Object.entries(this.customTemplates)) {
             if (!Array.isArray(samples)) continue;
             for (let sIdx = 0; sIdx < samples.length; sIdx++) {
@@ -1424,7 +1417,7 @@ class MatrixMindApp {
                 let loopPenalization = Math.abs((features.loops || 0) - (target.loops || 0)) * 1.35;
                 let aspectPenalization = Math.abs((features.aspectRatio || 1.0) - (target.aspectRatio || 1.0)) * 1.8;
 
-                // Al ser una muestra ense√±ada expl√≠citamente por el usuario, le otorgamos una optimizaci√≥n de prioridad (* 0.94)
+                // Al ser una muestra enseÒada explÌcitamente por el usuario, le otorgamos una optimizaciÛn de prioridad (* 0.94)
                 const totalDistance = (cosineDistance + (dist5x5 * 1.2) + (distProfile * 0.8) + stemPenalization + crossingPenalization + (distCorners * 2.0) + (distBars * 2.2) + loopPenalization + aspectPenalization) * 0.94;
 
                 if (totalDistance < minDistance) {
@@ -1450,31 +1443,28 @@ class MatrixMindApp {
     }
 
     /**
-     * Enviar petici√≥n HTTP POST as√≠ncrona al endpoint del ESP32
+     * Enviar peticiÛn HTTP POST asÌncrona al endpoint del ESP32
      */
     async sendToESP32(character, extraPayload = {}) {
         this.lastSentPayload = { character, extraPayload };
+
+        // Iluminar al instante en la matriz LED virtual en pantalla
+        if (extraPayload.action && this.DOMOTICS_ICONS[extraPayload.action]) {
+            this.renderVirtualMatrixPattern(this.DOMOTICS_ICONS[extraPayload.action]);
+        } else if (character) {
+            this.displayVirtualChar(character);
+        }
 
         const url = `http://${this.esp32Ip}/api/set-character`;
         const payload = { character: character || '', ...extraPayload };
 
         let toastDesc = `Enviando '${character}'`;
-        let toastEmoji = 'üöÄ';
-        if (extraPayload.action === 'lamp_on') {
-            toastDesc = 'Encendiendo Foco Real';
-            toastEmoji = 'üí°';
-        } else if (extraPayload.action === 'lamp_off') {
-            toastDesc = 'Apagando Foco Real';
-            toastEmoji = 'üåë';
-        } else if (extraPayload.action === 'alarm_on') {
-            toastDesc = `Activando Sirena (${extraPayload.duration || 3}s)`;
-            toastEmoji = 'üö®';
-        } else if (extraPayload.action === 'alarm_off') {
-            toastDesc = 'Silenciando Sirena';
-            toastEmoji = 'üîï';
-        }
+        if (extraPayload.action === 'lamp_on') toastDesc = '?? Encendiendo Foco Real';
+        else if (extraPayload.action === 'lamp_off') toastDesc = '?? Apagando Foco Real';
+        else if (extraPayload.action === 'alarm_on') toastDesc = `?? Activando Sirena (${extraPayload.duration || 3}s)`;
+        else if (extraPayload.action === 'alarm_off') toastDesc = '?? Silenciando Sirena';
 
-        this.showToast(`${toastDesc} al ESP32 (${this.esp32Ip})...`, 'info', toastEmoji);
+        this.showToast(`?? ${toastDesc} al ESP32 (${this.esp32Ip})...`);
 
         try {
             const controller = new AbortController();
@@ -1493,36 +1483,26 @@ class MatrixMindApp {
 
             if (response.ok) {
                 const data = await response.json().catch(() => ({ status: 'ok' }));
-                console.log('‚úÖ Respuesta del ESP32:', data);
-                this.isEsp32Connected = true;
+                console.log('? Respuesta del ESP32:', data);
                 this.updateConnectionBadge(true);
-
-                // Iluminar en la matriz LED virtual solo cuando el ESP32 conect√≥ con √©xito
-                if (extraPayload.action && this.DOMOTICS_ICONS[extraPayload.action]) {
-                    this.renderVirtualMatrixPattern(this.DOMOTICS_ICONS[extraPayload.action]);
-                    this.showToast('¬°Acci√≥n dom√≥tica ejecutada e icono iluminado en matriz LED!', 'success', '‚ú®');
+                if (extraPayload.action) {
+                    this.showToast(`? °AcciÛn domÛtica ejecutada e icono iluminado en matriz LED!`);
                 } else {
-                    if (character) this.displayVirtualChar(character);
-                    this.showToast(`¬°Car√°cter '${character}' iluminado en matriz LED!`, 'success', '‚ú®');
+                    this.showToast(`? °Car·cter '${character}' iluminado en matriz LED!`);
                 }
-                return true;
             } else {
-                console.warn(`‚ö†Ô∏è ESP32 respondi√≥ con c√≥digo ${response.status}`);
-                this.isEsp32Connected = false;
-                this.updateConnectionBadge(false, `HTTP ${response.status}`);
-                this.showToast(`El ESP32 respondi√≥ con error (${response.status}). Verifica la configuraci√≥n en Sistema & Red.`, 'warning', '‚ö†Ô∏è');
-                return false;
+                console.warn(`?? ESP32 respondiÛ con cÛdigo ${response.status}`);
+                this.updateConnectionBadge(true, `HTTP ${response.status}`);
+                this.showToast(`?? ESP32 respondiÛ con error (${response.status})`);
             }
         } catch (err) {
-            console.warn('‚ö†Ô∏è No se pudo contactar al ESP32 (¬øest√°s en la misma red Wi-Fi?):', err.message);
-            this.isEsp32Connected = false;
+            console.warn('?? No se pudo contactar al ESP32 (øest·s en la misma red Wi-Fi?):', err.message);
             this.updateConnectionBadge(false);
             if (extraPayload.action) {
-                this.showToast('Sin conexi√≥n al ESP32: Configura primero la direcci√≥n IP en Sistema & Red para usar Dom√≥tica & Alertas.', 'warning', '‚ö†Ô∏è');
+                this.showToast(`?? Modo Local/Simulado: Icono domÛtico iluminado en pantalla`);
             } else {
-                this.showToast('Sin conexi√≥n al ESP32: Configura primero la direcci√≥n IP en Sistema & Red para usar Lienzo T√°ctil & IA.', 'warning', '‚ö†Ô∏è');
+                this.showToast(`?? Modo Local/Simulado: '${character}' iluminado en simulador de pantalla`);
             }
-            return false;
         }
     }
 
@@ -1539,12 +1519,15 @@ class MatrixMindApp {
 
         const speed = parseInt(this.phraseSpeedSelect ? this.phraseSpeedSelect.value : '65', 10);
 
+        // Iniciar al instante la animaciÛn de marquesina en la matriz LED virtual en pantalla
+        this.scrollVirtualPhrase(text, speed);
+
         const url = `http://${this.esp32Ip}/api/scroll-text`;
         const payload = { text: text, speed: speed };
 
         this.sendPhraseBtn.disabled = true;
-        this.sendPhraseBtn.innerHTML = `<span>‚è≥</span> Enviando...`;
-        this.showToast(`Transmitiendo frase "${text}" al ESP32 (${this.esp32Ip})...`, 'info', 'üìú');
+        this.sendPhraseBtn.innerHTML = `<span>?</span> Enviando...`;
+        this.showToast(`?? Transmitiendo frase "${text}" al ESP32 (${this.esp32Ip})...`);
 
         try {
             const controller = new AbortController();
@@ -1561,20 +1544,17 @@ class MatrixMindApp {
 
             if (response.ok) {
                 const data = await response.json().catch(() => ({ status: 'ok' }));
-                console.log('‚úÖ Respuesta del ESP32 (scroll):', data);
-                this.isEsp32Connected = true;
+                console.log('? Respuesta del ESP32 (scroll):', data);
                 this.updateConnectionBadge(true);
-                this.scrollVirtualPhrase(text, speed);
-                this.showToast(`¬°Frase "${text}" desplaz√°ndose en la matriz LED!`, 'success', '‚ú®');
+                this.showToast(`? °Frase "${text}" desplaz·ndose en la matriz LED!`);
                 this.phraseInput.value = '';
             } else {
-                console.warn(`‚ö†Ô∏è ESP32 respondi√≥ con c√≥digo ${response.status}`);
-                this.isEsp32Connected = false;
-                this.updateConnectionBadge(false, `HTTP ${response.status}`);
-                this.showToast(`Error HTTP ${response.status} al enviar frase. Verifica la configuraci√≥n en Sistema & Red.`, 'warning', '‚ö†Ô∏è');
+                console.warn(`?? ESP32 respondiÛ con cÛdigo ${response.status}`);
+                this.updateConnectionBadge(true, `HTTP ${response.status}`);
+                this.showToast(`?? Error HTTP ${response.status} al enviar frase`);
             }
         } catch (err) {
-            console.warn('‚ö†Ô∏è No se pudo contactar al ESP32 en /api/scroll-text:', err.message);
+            console.warn('?? No se pudo contactar al ESP32 en /api/scroll-text:', err.message);
             try {
                 const fbRes = await fetch(`http://${this.esp32Ip}/api/set-character`, {
                     method: 'POST',
@@ -1582,23 +1562,20 @@ class MatrixMindApp {
                     body: JSON.stringify({ character: text, speed: speed })
                 });
                 if (fbRes.ok) {
-                    this.isEsp32Connected = true;
                     this.updateConnectionBadge(true);
-                    this.scrollVirtualPhrase(text, speed);
-                    this.showToast(`¬°Frase "${text}" desplaz√°ndose en la matriz LED!`, 'success', '‚ú®');
+                    this.showToast(`? °Frase "${text}" desplaz·ndose en la matriz LED!`);
                     this.phraseInput.value = '';
                     this.sendPhraseBtn.disabled = false;
-                    this.sendPhraseBtn.innerHTML = `<span>üöÄ</span> Enviar Frase`;
+                    this.sendPhraseBtn.innerHTML = `<span>??</span> Enviar Frase`;
                     return;
                 }
             } catch (e2) { }
 
-            this.isEsp32Connected = false;
             this.updateConnectionBadge(false);
-            this.showToast('Sin conexi√≥n al ESP32: Configura primero la direcci√≥n IP en Sistema & Red para usar Lienzo T√°ctil & IA.', 'warning', '‚ö†Ô∏è');
+            this.showToast(`?? Modo Local/Simulado: Frase "${text}" lista para marquesina (ESP32 sin conexiÛn)`);
         } finally {
             this.sendPhraseBtn.disabled = false;
-            this.sendPhraseBtn.innerHTML = `<span>üöÄ</span> Enviar Frase`;
+            this.sendPhraseBtn.innerHTML = `<span>??</span> Enviar Frase`;
         }
     }
 
@@ -1608,79 +1585,38 @@ class MatrixMindApp {
     updateConnectionBadge(online, text = null) {
         if (online) {
             this.wifiStatus.classList.remove('offline');
-            this.wifiStatus.innerHTML = `<span class="wifi-icon">üì∂</span><span class="status-text">${text || 'ESP32 Conectado'}</span>`;
+            this.wifiStatus.innerHTML = `<span class="wifi-icon">??</span><span class="status-text">${text || 'ESP32 Conectado'}</span>`;
         } else {
             this.wifiStatus.classList.add('offline');
-            this.wifiStatus.innerHTML = `<span class="wifi-icon">‚ö†Ô∏è</span><span class="status-text">ESP32 Offline</span>`;
+            this.wifiStatus.innerHTML = `<span class="wifi-icon">??</span><span class="status-text">ESP32 Offline</span>`;
         }
     }
 
     /**
-     * Gesti√≥n del Toast flotante sin duplicaci√≥n de emoticones
+     * GestiÛn del Toast flotante
      */
-    showToast(msg, type = 'info', icon = null) {
-        if (!this.toastNotification || !this.toastMessage) return;
-
-        let cleanMsg = (msg || '').trim();
-        const leadingEmojiMatch = cleanMsg.match(/^(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)\s*/u);
-        let resolvedIcon = icon;
-        if (leadingEmojiMatch) {
-            if (!resolvedIcon) resolvedIcon = leadingEmojiMatch[1];
-            cleanMsg = cleanMsg.slice(leadingEmojiMatch[0].length).trim();
-        }
-
-        if (!resolvedIcon) {
-            if (type === 'warning') resolvedIcon = '‚ö†Ô∏è';
-            else if (type === 'error') resolvedIcon = '‚ùå';
-            else if (type === 'success') resolvedIcon = '‚ú®';
-            else resolvedIcon = 'üöÄ';
-        }
-
-        let resolvedType = type;
-        if (resolvedType === 'info') {
-            if (resolvedIcon === '‚ö†Ô∏è') resolvedType = 'warning';
-            else if (resolvedIcon === '‚ùå') resolvedType = 'error';
-            else if (resolvedIcon === '‚ú®' || resolvedIcon === '‚úÖ') resolvedType = 'success';
-        }
-
-        this.toastNotification.classList.remove('toast-warning', 'toast-error', 'toast-success');
-        if (resolvedType === 'warning') {
-            this.toastNotification.classList.add('toast-warning');
-        } else if (resolvedType === 'error') {
-            this.toastNotification.classList.add('toast-error');
-        } else if (resolvedType === 'success') {
-            this.toastNotification.classList.add('toast-success');
-        }
-
-        if (this.toastIcon) {
-            this.toastIcon.textContent = resolvedIcon;
-        }
-        this.toastMessage.textContent = cleanMsg;
+    showToast(msg) {
+        this.toastMessage.textContent = msg;
         this.toastNotification.classList.add('show');
 
         if (this.toastTimer) clearTimeout(this.toastTimer);
         this.toastTimer = setTimeout(() => {
             this.toastNotification.classList.remove('show');
-        }, 4000);
+        }, 3500);
     }
 
     /**
-     * Aprendizaje instant√°neo multiescala en dispositivo (Fine-Tuning multi-muestra por usuario)
+     * Aprendizaje instant·neo multiescala en dispositivo (Fine-Tuning multi-muestra por usuario)
      */
     trainOnDevice() {
         const correctChar = this.correctCharInput.value.trim().toUpperCase();
         if (!correctChar || !this.classes.includes(correctChar)) {
-            this.showToast('Introduce primero una letra v√°lida (A-Z) o un n√∫mero (0-9) en la casilla.', 'warning', '‚ö†Ô∏è');
-            return;
-        }
-
-        if (!this.isEsp32Connected) {
-            this.showToast('Sin conexi√≥n al ESP32: Configura y conecta primero la direcci√≥n IP del microcontrolador.', 'warning', '‚ö†Ô∏è');
+            alert('Por favor introduce una letra v·lida (A-Z) o un n˙mero (0-9).');
             return;
         }
 
         if (!this.lastPrediction || !this.lastPrediction.features) {
-            this.showToast('Dibuja primero el car√°cter en el lienzo antes de ense√±arle a la IA.', 'warning', '‚ö†Ô∏è');
+            alert('Dibuja primero el car·cter en el lienzo antes de enseÒarle a la IA.');
             return;
         }
 
@@ -1690,18 +1626,18 @@ class MatrixMindApp {
         }
         this.customTemplates[correctChar].push(this.lastPrediction.features);
         if (this.customTemplates[correctChar].length > 12) {
-            this.customTemplates[correctChar].shift(); // Mantener las 12 muestras m√°s recientes para evitar saturaci√≥n
+            this.customTemplates[correctChar].shift(); // Mantener las 12 muestras m·s recientes para evitar saturaciÛn
         }
         localStorage.setItem('matrixmind_custom_templates', JSON.stringify(this.customTemplates));
 
         const count = this.customTemplates[correctChar].length;
         this.predictionChar.textContent = correctChar;
-        this.predictionDetails.textContent = `Car√°cter personalizado (Muestra #${count})`;
+        this.predictionDetails.textContent = `Car·cter personalizado (Muestra #${count})`;
         this.confidenceBar.style.width = '100%';
         this.confidenceLabel.textContent = `Coincidencia Exacta (Aprendido)`;
 
         this.correctCharInput.value = '';
-        this.showToast(`¬°IA aprendi√≥ la forma #${count} de dibujar la '${correctChar}' exitosamente!`, 'success', 'üß†');
+        this.showToast(`?? °IA aprendiÛ la forma #${count} de dibujar la '${correctChar}' exitosamente!`);
         this.updateCustomTemplatesStatus();
         this.sendToESP32(correctChar);
     }
@@ -1721,32 +1657,22 @@ class MatrixMindApp {
     }
 
     clearAllCustomTemplates() {
-        if (!this.isEsp32Connected) {
-            this.showToast('Sin conexi√≥n al ESP32: Configura y conecta primero la direcci√≥n IP antes de borrar las muestras.', 'warning', '‚ö†Ô∏è');
-            return;
-        }
-
-        if (confirm('¬øEst√°s seguro de que deseas borrar todas las formas personalizadas aprendidas por la IA?')) {
+        if (confirm('øEst·s seguro de que deseas borrar todas las formas personalizadas aprendidas por la IA?')) {
             this.customTemplates = {};
             localStorage.removeItem('matrixmind_custom_templates');
             this.updateCustomTemplatesStatus();
-            this.showToast('Todas las muestras personalizadas han sido borradas.', 'info', 'üßπ');
+            this.showToast('?? Todas las muestras personalizadas han sido borradas.');
         }
     }
 
     /**
-     * Exportar todas las plantillas personalizadas y configuraci√≥n de dom√≥tica a un archivo JSON descargable
+     * Exportar todas las plantillas personalizadas y configuraciÛn de domÛtica a un archivo JSON descargable
      */
     exportAIProfile() {
-        if (!this.isEsp32Connected) {
-            this.showToast('Sin conexi√≥n al ESP32: Configura y conecta primero la direcci√≥n IP antes de exportar el perfil.', 'warning', '‚ö†Ô∏è');
-            return;
-        }
-
         const sampleCount = Object.values(this.customTemplates).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
         
         const profileData = {
-            appName: 'STA Sistema T√°ctil Asistencial Profile',
+            appName: 'STA Sistema T·ctil Asistencial Profile',
             version: 'v7.0',
             exportDate: new Date().toISOString(),
             totalSamples: sampleCount,
@@ -1767,19 +1693,13 @@ class MatrixMindApp {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        this.showToast(`¬°Perfil IA con ${sampleCount} muestras y dom√≥tica exportado exitosamente!`, 'success', 'üì§');
+        this.showToast(`?? °Perfil IA con ${sampleCount} muestras y domÛtica exportado exitosamente!`);
     }
 
     /**
-     * Importar y fusionar archivo JSON de perfil de IA y dom√≥tica al almacenamiento local
+     * Importar y fusionar archivo JSON de perfil de IA y domÛtica al almacenamiento local
      */
     async importAIProfile(event) {
-        if (!this.isEsp32Connected) {
-            event.target.value = '';
-            this.showToast('Sin conexi√≥n al ESP32: Configura y conecta primero la direcci√≥n IP antes de importar un perfil.', 'warning', '‚ö†Ô∏è');
-            return;
-        }
-
         const file = event.target.files[0];
         if (!file) return;
 
@@ -1789,7 +1709,7 @@ class MatrixMindApp {
 
             const rawTemplates = data.templates || data;
             if (typeof rawTemplates !== 'object' || rawTemplates === null) {
-                throw new Error('Formato de archivo inv√°lido.');
+                throw new Error('Formato de archivo inv·lido.');
             }
 
             let addedSamples = 0;
@@ -1824,7 +1744,7 @@ class MatrixMindApp {
                 }
             }
 
-            // Si el archivo incluye configuraci√≥n de dom√≥tica, importarla tambi√©n
+            // Si el archivo incluye configuraciÛn de domÛtica, importarla tambiÈn
             if (data.domoticsConfig && typeof data.domoticsConfig === 'object') {
                 this.domoticsConfig = {
                     ...this.domoticsConfig,
@@ -1838,18 +1758,18 @@ class MatrixMindApp {
             this.updateCustomTemplatesStatus();
             event.target.value = '';
 
-            alert(`‚úÖ ¬°Perfil IA importado correctamente!\nSe a√±adieron ${addedSamples} nuevas muestras al sistema.`);
-            this.showToast(`üì• ${addedSamples} muestras importadas exitosamente.`);
+            alert(`? °Perfil IA importado correctamente!\nSe aÒadieron ${addedSamples} nuevas muestras al sistema.`);
+            this.showToast(`?? ${addedSamples} muestras importadas exitosamente.`);
 
         } catch (err) {
             console.error('Error al importar perfil:', err);
-            alert('‚ùå No se pudo importar el archivo JSON. Verifica que sea un archivo de respaldo v√°lido de MatrixMind AI.');
+            alert('? No se pudo importar el archivo JSON. Verifica que sea un archivo de respaldo v·lido de MatrixMind AI.');
             event.target.value = '';
         }
     }
 
     /**
-     * Gesti√≥n de Navegaci√≥n por Pesta√±as (Tabs)
+     * GestiÛn de NavegaciÛn por PestaÒas (Tabs)
      */
     switchTab(targetPaneId) {
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1870,7 +1790,7 @@ class MatrixMindApp {
     }
 
     /**
-     * Gesti√≥n de Ajustes del Sistema ESP32
+     * GestiÛn de Ajustes del Sistema ESP32
      */
     loadSettings() {
         if (this.esp32IpInput) this.esp32IpInput.value = this.esp32Ip;
@@ -1879,51 +1799,20 @@ class MatrixMindApp {
         this.updateCustomTemplatesStatus();
     }
 
-    async saveSettings() {
-        const ip = (this.esp32IpInput ? this.esp32IpInput.value.trim() : '') || '192.168.43.152';
-        if (this.saveSettingsBtn) this.saveSettingsBtn.disabled = true;
+    saveSettings() {
+        const ip = (this.esp32IpInput ? this.esp32IpInput.value.trim() : '') || '192.168.1.100';
+        this.esp32Ip = ip;
+        this.autoSend = this.autoSendToggle ? this.autoSendToggle.checked : false;
 
-        try {
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), 3000);
+        localStorage.setItem('matrixmind_esp32_ip', this.esp32Ip);
+        localStorage.setItem('matrixmind_autosend', this.autoSend);
 
-            const res = await fetch(`http://${ip}/api/set-character`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ character: 'A' }),
-                signal: controller.signal
-            });
-            clearTimeout(id);
-
-            if (!res.ok) {
-                this.isEsp32Connected = false;
-                this.updateConnectionBadge(false, `HTTP ${res.status}`);
-                this.showToast(`El ESP32 respondi√≥ con error (${res.status}). Verifica la direcci√≥n IP antes de guardar.`, 'warning', '‚ö†Ô∏è');
-                return;
-            }
-
-            this.isEsp32Connected = true;
-            this.esp32Ip = ip;
-            this.autoSend = this.autoSendToggle ? this.autoSendToggle.checked : false;
-
-            localStorage.setItem('matrixmind_esp32_ip', this.esp32Ip);
-            localStorage.setItem('matrixmind_autosend', this.autoSend);
-
-            if (this.endpointPreview) this.endpointPreview.textContent = `http://${this.esp32Ip}/api/set-character`;
-            this.updateConnectionBadge(true);
-            this.displayVirtualChar('A');
-            this.showToast(`Configuraci√≥n del ESP32 guardada: ${this.esp32Ip}`, 'success', 'üíæ');
-        } catch (err) {
-            this.isEsp32Connected = false;
-            this.updateConnectionBadge(false);
-            this.showToast(`Sin conexi√≥n al ESP32 (${ip}): Verifica que la direcci√≥n IP sea correcta y el ESP32 est√© conectado antes de guardar.`, 'warning', '‚ö†Ô∏è');
-        } finally {
-            if (this.saveSettingsBtn) this.saveSettingsBtn.disabled = false;
-        }
+        if (this.endpointPreview) this.endpointPreview.textContent = `http://${this.esp32Ip}/api/set-character`;
+        this.showToast(`?? ConfiguraciÛn del ESP32 guardada: ${this.esp32Ip}`);
     }
 
     async testESP32Connection() {
-        const ip = (this.esp32IpInput ? this.esp32IpInput.value.trim() : '') || '192.168.43.152';
+        const ip = (this.esp32IpInput ? this.esp32IpInput.value.trim() : '') || '192.168.1.100';
         if (this.testConnectionBtn) this.testConnectionBtn.textContent = 'Probando...';
 
         try {
@@ -1940,29 +1829,21 @@ class MatrixMindApp {
             clearTimeout(id);
 
             if (res.ok) {
-                this.isEsp32Connected = true;
-                this.esp32Ip = ip;
-                localStorage.setItem('matrixmind_esp32_ip', this.esp32Ip);
+                alert(`? ConexiÛn exitosa con el ESP32 en ${ip} y matriz LED probada con la letra 'A'.`);
                 this.updateConnectionBadge(true);
-                this.displayVirtualChar('A');
-                this.showToast(`Conexi√≥n exitosa con el ESP32 en ${ip} y matriz LED probada con la letra 'A'.`, 'success', '‚úÖ');
             } else {
-                this.isEsp32Connected = false;
-                this.updateConnectionBadge(false, `HTTP ${res.status}`);
-                this.showToast(`El ESP32 respondi√≥ con c√≥digo HTTP ${res.status}.`, 'warning', '‚ö†Ô∏è');
+                alert(`?? El ESP32 respondiÛ con cÛdigo HTTP ${res.status}.`);
             }
         } catch (err) {
-            this.isEsp32Connected = false;
-            this.updateConnectionBadge(false);
-            this.showToast(`No se pudo conectar. Verifica que el ESP32 est√© encendido y conectado a tu red Wi-Fi.`, 'warning', '‚ö†Ô∏è');
+            alert(`?? No se pudo conectar a http://${ip}/api/set-character. Verifica que el ESP32 estÈ encendido y conectado a tu red Wi-Fi.`);
         } finally {
-            if (this.testConnectionBtn) this.testConnectionBtn.textContent = 'Probar Conexi√≥n';
+            if (this.testConnectionBtn) this.testConnectionBtn.textContent = 'Probar ConexiÛn';
         }
     }
 
     /**
      * =========================================================================
-     * DOM√ìTICA INTELIGENTE CONFIGURABLE (FOCO, ALARMA, TIEMPOS, GESTOS)
+     * DOM”TICA INTELIGENTE CONFIGURABLE (FOCO, ALARMA, TIEMPOS, GESTOS)
      * =========================================================================
      */
 
@@ -1980,19 +1861,19 @@ class MatrixMindApp {
                 };
             }
         } catch (e) {
-            console.warn('‚ö†Ô∏è Error al cargar domotics config:', e);
+            console.warn('?? Error al cargar domotics config:', e);
         }
         return defaultConfig;
     }
 
     syncDomoticsUI() {
-        // Duraci√≥n configurada de la sirena
+        // DuraciÛn configurada de la sirena
         const aDur = document.getElementById('alarmDurationSelect');
         const durBadge = document.getElementById('durationBadgeText');
         if (aDur) aDur.value = String(this.domoticsConfig?.alarmOn?.duration || 3);
         if (durBadge) durBadge.textContent = `${this.domoticsConfig?.alarmOn?.duration || 3} Segundos`;
 
-        // Contadores de muestras aprendidas por cada s√≠mbolo libre dom√≥tico
+        // Contadores de muestras aprendidas por cada sÌmbolo libre domÛtico
         const sLOn = document.getElementById('lampOnSampleCount');
         const sLOff = document.getElementById('lampOffSampleCount');
         const sAOn = document.getElementById('alarmOnSampleCount');
@@ -2009,11 +1890,6 @@ class MatrixMindApp {
     }
 
     saveDomoticsConfig() {
-        if (!this.isEsp32Connected) {
-            this.showToast('Sin conexi√≥n al ESP32: Configura primero la direcci√≥n IP en Sistema & Red para guardar en Dom√≥tica & Alertas.', 'warning', '‚ö†Ô∏è');
-            return;
-        }
-
         const duration = parseInt(document.getElementById('alarmDurationSelect')?.value || '3', 10);
         this.domoticsConfig = {
             alarmOn: { duration: duration }
@@ -2021,41 +1897,36 @@ class MatrixMindApp {
 
         localStorage.setItem('matrixmind_domotics_config', JSON.stringify(this.domoticsConfig));
         this.syncDomoticsUI();
-        this.showToast('¬°Configuraci√≥n de Dom√≥tica guardada exitosamente!', 'success', 'üíæ');
+        this.showToast(`?? °ConfiguraciÛn de DomÛtica guardada exitosamente!`);
     }
 
     /**
-     * Ense√±ar a la IA el trazo actual dibujado en el lienzo para una acci√≥n dom√≥tica espec√≠fica
+     * EnseÒar a la IA el trazo actual dibujado en el lienzo para una acciÛn domÛtica especÌfica
      */
     async trainDomoticsAction(actionKey) {
-        if (!this.isEsp32Connected) {
-            this.showToast('Sin conexi√≥n al ESP32: Configura primero la direcci√≥n IP en Sistema & Red para usar Dom√≥tica & Alertas.', 'warning', '‚ö†Ô∏è');
-            return;
-        }
-
         let targetKey = 'DOM_LAMP_ON';
         let actionLabel = 'Encender Foco';
-        let iconEmoji = 'üí°';
+        let iconEmoji = '??';
 
         if (actionKey === 'lamp_on') {
             targetKey = 'DOM_LAMP_ON';
             actionLabel = 'Encender Foco';
-            iconEmoji = 'üí°';
+            iconEmoji = '??';
         } else if (actionKey === 'lamp_off') {
             targetKey = 'DOM_LAMP_OFF';
             actionLabel = 'Apagar Foco';
-            iconEmoji = 'üåë';
+            iconEmoji = '??';
         } else if (actionKey === 'alarm_on') {
             targetKey = 'DOM_ALARM_ON';
             actionLabel = 'Activar Alarma';
-            iconEmoji = 'üîî';
+            iconEmoji = '??';
         } else if (actionKey === 'alarm_off') {
             targetKey = 'DOM_ALARM_OFF';
             actionLabel = 'Silenciar Alarma';
-            iconEmoji = 'üîï';
+            iconEmoji = '??';
         }
 
-        // Si a√∫n no se han extra√≠do caracter√≠sticas del trazo dibujado
+        // Si a˙n no se han extraÌdo caracterÌsticas del trazo dibujado
         let features = this.lastPrediction?.features;
         if (!features && this.hasDrawn) {
             try {
@@ -2069,7 +1940,7 @@ class MatrixMindApp {
         }
 
         if (!features) {
-            alert('‚ö†Ô∏è Dibuja primero cualquier s√≠mbolo o trazo en el lienzo antes de presionar este bot√≥n.');
+            alert('?? Dibuja primero cualquier sÌmbolo o trazo en el lienzo antes de presionar este botÛn.');
             this.switchTab('pane-canvas');
             return;
         }
@@ -2086,84 +1957,70 @@ class MatrixMindApp {
         const count = this.customTemplates[targetKey].length;
         this.syncDomoticsUI();
         this.updateCustomTemplatesStatus();
-        this.showToast(`¬°IA aprendi√≥ la muestra #${count} para ${actionLabel}!`, 'success', 'üß†');
+        this.showToast(`?? °IA aprendiÛ la muestra #${count} para ${iconEmoji} ${actionLabel}!`);
     }
 
     /**
-     * Detectar si un car√°cter clasificado por la IA corresponde a una acci√≥n de dom√≥tica
+     * Detectar si un car·cter clasificado por la IA corresponde a una acciÛn de domÛtica
      */
     getDomoticsActionForChar(char) {
         if (!char) return null;
         const upper = char.toUpperCase();
 
         if (upper === 'DOM_LAMP_ON' || upper === 'L') {
-            return { actionKey: 'lamp_on', detailLabel: 'üí° Dom√≥tica: Encendiendo Foco Real (Icono Foco)' };
+            return { actionKey: 'lamp_on', detailLabel: '?? DomÛtica: Encendiendo Foco Real (Icono Foco)' };
         }
         if (upper === 'DOM_LAMP_OFF' || upper === 'O') {
-            return { actionKey: 'lamp_off', detailLabel: 'üåë Dom√≥tica: Apagando Foco Real (Icono Foco Apagado)' };
+            return { actionKey: 'lamp_off', detailLabel: '?? DomÛtica: Apagando Foco Real (Icono Foco Apagado)' };
         }
         if (upper === 'DOM_ALARM_ON' || upper === 'A') {
             const selEl = document.getElementById('alarmDurationSelect');
             const dur = selEl ? (parseInt(selEl.value, 10) || 3) : (this.domoticsConfig?.alarmOn?.duration || 3);
-            return { actionKey: 'alarm_on', detailLabel: `üö® Dom√≥tica: Activando Alarma (${dur}s)` };
+            return { actionKey: 'alarm_on', detailLabel: `?? DomÛtica: Activando Alarma (${dur}s)` };
         }
         if (upper === 'DOM_ALARM_OFF' || upper === 'X') {
-            return { actionKey: 'alarm_off', detailLabel: 'üîï Dom√≥tica: Silenciando Alarma' };
+            return { actionKey: 'alarm_off', detailLabel: '?? DomÛtica: Silenciando Alarma' };
         }
         return null;
     }
 
     /**
-     * Ejecutar acci√≥n dom√≥tica con actualizaci√≥n de estado visual y transmisi√≥n al ESP32
+     * Ejecutar acciÛn domÛtica con actualizaciÛn de estado visual y transmisiÛn al ESP32
      */
     async executeDomoticsAction(actionKey, sendToServer = true) {
         let actionPayload = {};
-        let iconEmoji = 'üí°';
+        let iconEmoji = '??';
         let detailText = 'Foco Encendido';
-        const selEl = document.getElementById('alarmDurationSelect');
-        const dur = selEl ? (parseInt(selEl.value, 10) || 3) : (this.domoticsConfig?.alarmOn?.duration || 3);
 
         if (actionKey === 'lamp_on') {
             actionPayload = { action: 'lamp_on' };
-            iconEmoji = 'üí°';
-            detailText = 'Foco Encendido (Rel√© Conmutado)';
-        } else if (actionKey === 'lamp_off') {
-            actionPayload = { action: 'lamp_off' };
-            iconEmoji = 'üåë';
-            detailText = 'Foco Apagado (Rel√© Abierto)';
-        } else if (actionKey === 'alarm_on') {
-            if (!this.domoticsConfig.alarmOn) this.domoticsConfig.alarmOn = {};
-            this.domoticsConfig.alarmOn.duration = dur;
-            actionPayload = { action: 'alarm_on', duration: dur };
-            iconEmoji = 'üîî';
-            detailText = `Sirena Activada (${dur} seg)`;
-        } else if (actionKey === 'alarm_off') {
-            actionPayload = { action: 'alarm_off' };
-            iconEmoji = 'üîï';
-            detailText = 'Alarma Silenciada';
-        }
-
-        if (sendToServer) {
-            const connected = await this.sendToESP32('', actionPayload);
-            if (!connected) return;
-        }
-
-        if (actionKey === 'lamp_on') {
+            iconEmoji = '??';
+            detailText = 'Foco Encendido (RelÈ Conmutado)';
             this.domoticsState.lamp = true;
             this.updateDomoticsVisualState();
             this.renderVirtualMatrixPattern(this.DOMOTICS_ICONS.lamp_on);
-            if (!sendToServer) this.showToast('Foco Encendido', 'info', 'üí°');
+            this.showToast(`?? Foco Encendido`);
         } else if (actionKey === 'lamp_off') {
+            actionPayload = { action: 'lamp_off' };
+            iconEmoji = '??';
+            detailText = 'Foco Apagado (RelÈ Abierto)';
             this.domoticsState.lamp = false;
             this.updateDomoticsVisualState();
             this.renderVirtualMatrixPattern(this.DOMOTICS_ICONS.lamp_off);
-            if (!sendToServer) this.showToast('Foco Apagado', 'info', 'üåë');
+            this.showToast(`?? Foco Apagado`);
         } else if (actionKey === 'alarm_on') {
+            const selEl = document.getElementById('alarmDurationSelect');
+            const dur = selEl ? (parseInt(selEl.value, 10) || 3) : (this.domoticsConfig?.alarmOn?.duration || 3);
+            if (!this.domoticsConfig.alarmOn) this.domoticsConfig.alarmOn = {};
+            this.domoticsConfig.alarmOn.duration = dur;
+            actionPayload = { action: 'alarm_on', duration: dur };
+            iconEmoji = '??';
+            detailText = `Sirena Activada (${dur} seg)`;
             this.domoticsState.alarm = true;
             this.updateDomoticsVisualState();
-            if (!sendToServer) this.showToast(`Alarma Activada (${dur} segundos de sirena)`, 'info', 'üö®');
+            this.showToast(`?? Alarma Activada (${dur} segundos de sirena)`);
 
-            // Animaci√≥n sincronizada de sirena pulsante cada 250ms
+            // AnimaciÛn sincronizada de sirena pulsante cada 250ms
             if (this.alarmAnimInterval) clearInterval(this.alarmAnimInterval);
             let frameToggle = false;
             this.renderVirtualMatrixPattern(this.DOMOTICS_ICONS.alarm_on_1);
@@ -2183,6 +2040,9 @@ class MatrixMindApp {
                 this.updateDomoticsVisualState();
             }, dur * 1000);
         } else if (actionKey === 'alarm_off') {
+            actionPayload = { action: 'alarm_off' };
+            iconEmoji = '??';
+            detailText = 'Alarma Silenciada';
             this.domoticsState.alarm = false;
             if (this.alarmTimeout) clearTimeout(this.alarmTimeout);
             if (this.alarmAnimInterval) {
@@ -2191,13 +2051,17 @@ class MatrixMindApp {
             }
             this.renderVirtualMatrixPattern(this.DOMOTICS_ICONS.alarm_off);
             this.updateDomoticsVisualState();
-            if (!sendToServer) this.showToast('Alarma Silenciada', 'info', 'üîï');
+            this.showToast(`?? Alarma Silenciada`);
         }
 
         this.predictionChar.textContent = iconEmoji;
         this.predictionDetails.textContent = detailText;
         this.confidenceBar.style.width = '100%';
-        this.confidenceLabel.textContent = 'Acci√≥n Dom√≥tica Activada';
+        this.confidenceLabel.textContent = 'AcciÛn DomÛtica Activada';
+
+        if (sendToServer) {
+            await this.sendToESP32('', actionPayload);
+        }
     }
 
     updateDomoticsVisualState() {
@@ -2231,7 +2095,7 @@ class MatrixMindApp {
     }
 }
 
-// Arrancar aplicaci√≥n al cargar el DOM
+// Arrancar aplicaciÛn al cargar el DOM
 document.addEventListener('DOMContentLoaded', () => {
     window.matrixMind = new MatrixMindApp();
 });
