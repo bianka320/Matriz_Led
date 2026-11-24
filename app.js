@@ -402,7 +402,7 @@ class MatrixMindApp {
         // Configuración de Hardware ESP32
         if (this.esp32IpInput) {
             this.esp32IpInput.addEventListener('input', () => {
-                const ip = this.esp32IpInput.value.trim() || ' 10.45.136.140';
+                const ip = this.esp32IpInput.value.trim() || '10.112.130.152';
                 if (this.endpointPreview) this.endpointPreview.textContent = `http://${ip}/api/set-character`;
             });
         }
@@ -1800,7 +1800,7 @@ class MatrixMindApp {
     }
 
     saveSettings() {
-        const ip = (this.esp32IpInput ? this.esp32IpInput.value.trim() : '') || ' 10.45.136.140';
+        const ip = (this.esp32IpInput ? this.esp32IpInput.value.trim() : '') || '10.112.130.152';
         this.esp32Ip = ip;
         this.autoSend = this.autoSendToggle ? this.autoSendToggle.checked : false;
 
@@ -1812,7 +1812,7 @@ class MatrixMindApp {
     }
 
     async testESP32Connection() {
-        const ip = (this.esp32IpInput ? this.esp32IpInput.value.trim() : '') || ' 10.45.136.140';
+        const ip = (this.esp32IpInput ? this.esp32IpInput.value.trim() : '') || '10.112.130.152';
         if (this.testConnectionBtn) this.testConnectionBtn.textContent = 'Probando...';
 
         try {
